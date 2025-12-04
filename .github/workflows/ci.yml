@@ -3,8 +3,12 @@ name: Backend CI (Mongo service)
 on:
   push:
     branches: [ main, develop ]
+    paths:
+      - "Backend/**"
   pull_request:
     branches: [ main, develop ]
+    paths:
+      - "Backend/**"
 
 jobs:
   test:
@@ -29,26 +33,23 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        working-directory: ./Backend
         run: npm ci
 
       - name: Wait for mongo to be ready
         run: npx wait-on tcp:mongo:27017 --timeout 120000
 
       - name: Seed database
-        working-directory: ./Backend
         run: npm run seed
 
       - name: Lint
-        working-directory: ./Backend
         run: npm run lint
 
       - name: Validate commit messages (PR only)
         if: github.event_name == 'pull_request'
-        working-directory: ./Backend
         run: |
-          npx --no -- commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.sha }} || true
+          npx --no -- commitlint \
+            --from=${{ github.event.pull_request.base.sha }} \
+            --to=${{ github.sha }} || true
 
       - name: Run tests
-        working-directory: ./Backend
         run: npm test
