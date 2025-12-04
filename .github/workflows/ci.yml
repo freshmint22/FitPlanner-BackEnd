@@ -28,22 +28,13 @@ jobs:
         with:
           node-version: 18
           cache: npm
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
       - name: Wait for mongo to be ready
         run: npx wait-on tcp:mongo:27017 --timeout 120000
-
-      - name: Debug Docker containers
-        run: |
-          echo "Docker ps -a:"
-          docker ps -a || true
-          echo "\nLogs for mongo containers (if any):"
-          for id in $(docker ps -aqf "name=mongo"); do
-            echo "=== logs for $id ==="
-            docker logs "$id" || true
-          done
 
       - name: Seed database
         run: npm run seed
