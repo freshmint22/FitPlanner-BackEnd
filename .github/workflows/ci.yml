@@ -42,7 +42,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.npm
+            /home/runner/.npm
             Backend/node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('Backend/package-lock.json') }}
           restore-keys: |
@@ -57,7 +57,7 @@ jobs:
 
       - name: Install backend dependencies
         working-directory: Backend
-        run: npm ci --prefix Backend
+        run: npm ci
 
       - name: Wait for MongoDB to be ready
         run: |
@@ -65,18 +65,22 @@ jobs:
           sleep 10
 
       - name: Seed database
-        run: npm run seed --prefix Backend
+        working-directory: Backend
+        run: npm run seed
         env:
           MONGODB_URI: ${{ env.MONGODB_URI }}
 
       - name: Lint
-        run: npm run lint --prefix Backend
+        working-directory: Backend
+        run: npm run lint
 
       - name: Validate commit messages (PR only)
         if: github.event_name == 'pull_request'
+        working-directory: Backend
         run: |
           echo "Running commitlint on PR commits"
           npx --no -- commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.sha }} || true
 
       - name: Run tests
-        run: npm test --prefix Backend
+        working-directory: Backend
+        run: npm test
