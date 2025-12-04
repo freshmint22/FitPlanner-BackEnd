@@ -1,0 +1,59 @@
+name: Backend CI (Mongo service)
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      MONGODB_URI: mongodb://mongo:27017/fitplanner
+
+    services:
+      mongo:
+        image: mongo:6
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd="mongosh --eval 'db.adminCommand({ ping: 1 })'" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Debug - list workspace
+        run: |
+          echo "PWD: $(pwd)"
+          echo "Root listing:"
+          ls -la
+          echo "Backend listing:"
+          ls -la Backend || true
+          echo "Has Backend/package-lock.json?"
+          if [ -f Backend/package-lock.json ]; then echo "YES"; else echo "NO"; fi
+
+      - name: Use Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: Backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefix Backend
+
+      - name: Wait for MongoDB to be ready
+        run: |
+          echo "Waiting for MongoDB..."
+          sleep 10
+
+      - name: Seed database
+        run: npm --prefix Backend run seed
+
+      - name: Lint
+        run: npm --prefix Backend run lint
+
+      - name: Run tests
+        run: npm --prefix Backend test
