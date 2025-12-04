@@ -38,16 +38,6 @@ jobs:
           mkdir -p "$HOME/.npm"
           echo "Cache paths prepared"
 
-      - name: Cache npm
-        uses: actions/cache@v4
-        with:
-          path: |
-            /home/runner/.npm
-            Backend/node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('Backend/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
       - name: List repository (debug)
         run: |
           echo "Repository root: $PWD"
@@ -58,6 +48,16 @@ jobs:
       - name: Install backend dependencies
         working-directory: Backend
         run: npm ci
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            Backend/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('Backend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
       - name: Wait for MongoDB to be ready
         run: |
