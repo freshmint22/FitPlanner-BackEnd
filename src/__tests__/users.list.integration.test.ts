@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import request from 'supertest';
-import jwt from 'jsonwebtoken';
 import app from '../app';
 import Member from '../models/member.model';
 
@@ -30,7 +29,24 @@ describe('GET /api/users (integration)', () => {
     if (mongo) await mongo.stop();
   });
 
-  const makeToken = (payload: object) => jwt.sign(payload, process.env.JWT_SECRET || 'dev-secret');
+  const base64Url = (input: string) =>
+    Buffer.from(input)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+  const makeToken = (payload: object) => {
+    const header = { alg: 'HS256', typ: 'JWT' };
+    const secret = process.env.JWT_SECRET || 'dev-secret';
+    const headerB64 = base64Url(JSON.stringify(header));
+    const payloadB64 = base64Url(JSON.stringify({ ...payload, iat: Math.floor(Date.now() / 1000) }));
+    const data = `${headerB64}.${payloadB64}`;
+    const crypto = require('crypto');
+    const sig = crypto.createHmac('sha256', secret).update(data).digest('base64');
+    const sigB64 = sig.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return `${data}.${sigB64}`;
+  };
 
   test('requires authentication', async () => {
     const res = await request(app).get('/api/users');
@@ -39,13 +55,13 @@ describe('GET /api/users (integration)', () => {
   });
 
   test('forbids non-admin users', async () => {
-    const token = makeToken({ id: 'u1', email: 'u1@example.com', rol: 'user' });
+    const token = await makeToken({ id: 'u1', email: 'u1@example.com', rol: 'user' });
     const res = await request(app).get('/api/users').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(403);
   });
 
   test('returns paginated list for admin', async () => {
-    const token = makeToken({ id: 'admin', email: 'admin@example.com', rol: 'admin' });
+    const token = await makeToken({ id: 'admin', email: 'admin@example.com', rol: 'admin' });
     const res = await request(app)
       .get('/api/users')
       .set('Authorization', `Bearer ${token}`)
