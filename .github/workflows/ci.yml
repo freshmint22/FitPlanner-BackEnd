@@ -39,9 +39,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
+      - name: List repository (debug)
+        run: |
+          echo "Repository root: $PWD"
+          ls -la
+          echo "Contents of Backend:" || true
+          ls -la Backend || true
+
       - name: Install backend dependencies
-        run: npm ci
-        working-directory: Backend
+        run: npm ci --prefix Backend
 
       - name: Wait for MongoDB to be ready
         run: |
@@ -49,22 +55,18 @@ jobs:
           sleep 10
 
       - name: Seed database
-        run: npm run seed
-        working-directory: Backend
+        run: npm run seed --prefix Backend
         env:
           MONGODB_URI: ${{ env.MONGODB_URI }}
 
       - name: Lint
-        run: npm run lint
-        working-directory: Backend
+        run: npm run lint --prefix Backend
 
       - name: Validate commit messages (PR only)
         if: github.event_name == 'pull_request'
-        working-directory: Backend
         run: |
           echo "Running commitlint on PR commits"
           npx --no -- commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.sha }} || true
 
       - name: Run tests
-        run: npm test
-        working-directory: Backend
+        run: npm test --prefix Backend
