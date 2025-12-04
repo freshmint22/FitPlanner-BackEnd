@@ -57,7 +57,7 @@ jobs:
 
       - name: Install backend dependencies
         working-directory: Backend
-        run: npm ci
+        run: npm ci --prefix Backend
 
       - name: Wait for MongoDB to be ready
         run: |
