@@ -32,7 +32,7 @@ jobs:
           cache-dependency-path: Backend/package-lock.json
 
       - name: Install dependencies
-        run: npm install --prefix Backend
+        run: npm ci --prefix Backend
 
       - name: Wait for MongoDB to be ready
         run: |
