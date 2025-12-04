@@ -13,8 +13,6 @@ jobs:
     services:
       mongo:
         image: mongo:6
-        ports:
-          - 27017:27017   # <-- NECESARIO
 
     env:
       MONGODB_URI: mongodb://mongo:27017/fitplanner
@@ -27,7 +25,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'false'
+          cache: npm
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         working-directory: ./Backend
