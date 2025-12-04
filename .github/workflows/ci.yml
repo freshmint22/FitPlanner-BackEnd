@@ -23,11 +23,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Use Node.js 18
         uses: actions/setup-node@v4
         with:
           node-version: 18
+
+      - name: Ensure cache paths exist (debug)
+        run: |
+          echo "Creating cache directories if missing"
+          mkdir -p Backend/node_modules
+          mkdir -p "$HOME/.npm"
+          echo "Cache paths prepared"
 
       - name: Cache npm
         uses: actions/cache@v4
@@ -47,7 +56,8 @@ jobs:
           ls -la Backend || true
 
       - name: Install backend dependencies
-        run: npm ci --prefix Backend
+        working-directory: Backend
+        run: npm ci
 
       - name: Wait for MongoDB to be ready
         run: |
