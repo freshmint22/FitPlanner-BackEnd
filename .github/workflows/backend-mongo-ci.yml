@@ -24,6 +24,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Debug - list workspace
+        run: |
+          echo "PWD: $(pwd)"
+          echo "Root listing:"
+          ls -la
+          echo "Backend listing:"
+          ls -la Backend || true
+          echo "Has Backend/package-lock.json?"
+          if [ -f Backend/package-lock.json ]; then echo "YES"; else echo "NO"; fi
+
       - name: Use Node.js 18
         uses: actions/setup-node@v4
         with:
