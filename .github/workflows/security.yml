@@ -22,10 +22,13 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
+        working-directory: Backend
         run: npm ci
 
       - name: Run security audit
+        working-directory: Backend
         run: npm audit --audit-level=moderate
 
       - name: Run ESLint security
+        working-directory: Backend
         run: npm run lint
