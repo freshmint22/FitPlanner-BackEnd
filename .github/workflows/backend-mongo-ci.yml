@@ -32,8 +32,7 @@ jobs:
           cache-dependency-path: Backend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
-        working-directory: Backend
+        run: npm ci --prefix Backend
 
       - name: Wait for MongoDB to be ready
         run: |
@@ -41,13 +40,10 @@ jobs:
           sleep 10
 
       - name: Seed database
-        run: npm run seed
-        working-directory: Backend
+        run: npm --prefix Backend run seed
 
       - name: Lint
-        run: npm run lint
-        working-directory: Backend
+        run: npm --prefix Backend run lint
 
       - name: Run tests
-        run: npm test
-        working-directory: Backend
+        run: npm --prefix Backend test

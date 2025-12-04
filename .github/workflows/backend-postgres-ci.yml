@@ -35,13 +35,13 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --prefix Backend
 
       - name: Lint code
-        run: npm run lint
+        run: npm --prefix Backend run lint
 
       - name: Run tests
-        run: npm run test -- --coverage --watchAll=false
+        run: npm --prefix Backend run test -- --coverage --watchAll=false
         env:
           CI: true
 
@@ -53,7 +53,7 @@ jobs:
           name: codecov-umbrella
 
       - name: Build project
-        run: npm run build
+        run: npm --prefix Backend run build
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
