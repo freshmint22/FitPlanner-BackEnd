@@ -1,3 +1,29 @@
+## Summary
+
+This PR contains a set of backend improvements and security hardening:
+
+- Migrate runtime JWT verification path to `jose` with a fallback HMAC verifier for test compatibility.
+- Implemented `GET /api/users` pagination, search, sorting, and added parameter validation/normalization.
+- Added integration tests covering users listing and parameter normalization.
+- Split CI workflows into two files and made them robust to runner workspace paths by running `npm ci --prefix Backend`.
+- Fixed ESLint configuration and resolved a number of linting issues.
+- Added/updated `package-lock.json` so CI can run deterministic installs.
+
+## Security / Audit
+
+- Removed direct runtime reliance on `jsonwebtoken` and added `jose` for verification.
+- Updated `lint-staged` to reduce transitive `micromatch` advisories and regenerated lockfile; `npm audit` shows no vulnerabilities.
+
+## Tests
+
+- All backend tests pass locally: `npm test` — 9 tests passing.
+
+## Notes & Next Steps
+
+- Consider upgrading `eslint` and `supertest` in a follow-up to address deprecation warnings.
+- Optionally remove the HMAC fallback after configuring test runner transforms for ESM `jose` usage.
+
+Please review the changes and run CI to verify runner environment behaviors.
 Title: chore: migrate JWT handling to `jose` and remove `jsonwebtoken`
 
 Summary
