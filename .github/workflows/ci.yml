@@ -15,11 +15,6 @@ jobs:
         image: mongo:6
         ports:
           - 27017:27017
-        options: >-
-          --health-cmd="mongo --eval 'db.runCommand({ ping: 1 })'"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=10
 
     env:
       MONGODB_URI: mongodb://mongo:27017/fitplanner
@@ -37,13 +32,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Wait for mongo to accept connections
+      - name: Wait for mongo to be ready
+        run: npx wait-on tcp:mongo:27017 --timeout 120000
+
+      - name: Debug Docker containers
         run: |
-          echo "Waiting for MongoDB..."
-          for i in {1..20}; do
-            nc -z mongo 27017 && echo "MongoDB is ready!" && break
-            echo "Mongo not ready yet..."
-            sleep 2
+          echo "Docker ps -a:"
+          docker ps -a || true
+          echo "\nLogs for mongo containers (if any):"
+          for id in $(docker ps -aqf "name=mongo"); do
+            echo "=== logs for $id ==="
+            docker logs "$id" || true
           done
 
       - name: Seed database
