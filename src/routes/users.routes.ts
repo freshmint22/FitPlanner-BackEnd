@@ -20,13 +20,29 @@ router.get('/', requireAuth, async (req: Request & { user?: { rol?: string } }, 
   try {
     const user = req.user || {};
     if (user.rol !== 'admin') return res.status(403).json({ error: { code: 'forbidden', message: 'Requires admin role' } });
-    const page = Math.max(1, parseInt((req.query.page as string) || '1', 10));
-    const limitRaw = parseInt((req.query.limit as string) || '10', 10);
-    const limit = Math.min(100, Math.max(1, isNaN(limitRaw) ? 10 : limitRaw));
-    const sortParam = (req.query.sort as string) || '-createdAt';
-    const q = (req.query.q as string) || '';
-    const role = (req.query.role as string) || undefined;
-    const status = (req.query.status as string) || undefined;
+    // Validate and normalize query parameters
+    const rawPage = parseInt((req.query.page as string) || '1', 10);
+    const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+
+    const rawLimit = parseInt((req.query.limit as string) || '10', 10);
+    const limit = Number.isFinite(rawLimit) ? Math.min(100, Math.max(1, rawLimit)) : 10;
+
+    const sortParamRaw = (req.query.sort as string) || '-createdAt';
+    // allow list of fields, ignore empty entries
+    const sortParam = sortParamRaw
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 5)
+      .join(',');
+
+    const q = typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 200) : '';
+
+    const allowedRoles = new Set(['admin', 'user']);
+    const role = typeof req.query.role === 'string' && allowedRoles.has(req.query.role) ? req.query.role : undefined;
+
+    const allowedStatus = new Set(['activo', 'inactivo']);
+    const status = typeof req.query.status === 'string' && allowedStatus.has(req.query.status) ? req.query.status : undefined;
 
     const filter: FilterQuery<IMember> = {};
     if (q) {

@@ -73,4 +73,18 @@ describe('GET /api/users (integration)', () => {
     expect(res.body.items.length).toBeLessThanOrEqual(10);
     expect(res.body.total).toBe(25);
   });
+
+  test('normalizes invalid pagination and limits sort/q length', async () => {
+    const token = await makeToken({ id: 'admin', email: 'admin@example.com', rol: 'admin' });
+    const res = await request(app)
+      .get('/api/users')
+      .set('Authorization', `Bearer ${token}`)
+      .query({ page: -5, limit: 1000, sort: 'nombre, -createdAt', q: 'a'.repeat(500) });
+
+    expect(res.status).toBe(200);
+    // page should default to 1, limit capped to 100
+    expect(res.body.page).toBe(1);
+    expect(res.body.limit).toBeLessThanOrEqual(100);
+    expect(res.body.items.length).toBeLessThanOrEqual(res.body.limit);
+  });
 });
