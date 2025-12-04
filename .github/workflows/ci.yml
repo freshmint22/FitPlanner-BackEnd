@@ -31,7 +31,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: Backend/package-lock.json
 
-      - name: Install dependencies
+      - name: Install backend dependencies
         run: npm ci
         working-directory: Backend
 
@@ -43,73 +43,20 @@ jobs:
       - name: Seed database
         run: npm run seed
         working-directory: Backend
+        env:
+          MONGODB_URI: ${{ env.MONGODB_URI }}
 
       - name: Lint
         run: npm run lint
         working-directory: Backend
 
+      - name: Validate commit messages (PR only)
+        if: github.event_name == 'pull_request'
+        working-directory: Backend
+        run: |
+          echo "Running commitlint on PR commits"
+          npx --no -- commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.sha }} || true
+
       - name: Run tests
         run: npm test
         working-directory: Backend
-name: CI Backend
-
-on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  ci:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:14
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: fitplanner_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-    env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fitplanner_test
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint code
-        run: npm run lint
-
-      - name: Run tests
-        run: npm run test -- --coverage --watchAll=false
-        env:
-          CI: true
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage/lcov.info
-          flags: backend
-          name: codecov-umbrella
-
-      - name: Build project
-        run: npm run build
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-build
-          path: dist/

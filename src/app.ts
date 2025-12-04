@@ -14,6 +14,8 @@ app.use(express.json());
 app.use('/api/miembros', membersRouter);
 app.use('/routines', routinesRouter);
 app.use('/users', usersRouter);
+// expose users also under /api/users for frontend consistency
+app.use('/api/users', usersRouter);
 app.use('/auth', authRouter);
 
 app.use(errorHandler);

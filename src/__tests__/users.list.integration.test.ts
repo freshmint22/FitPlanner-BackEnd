@@ -1,0 +1,60 @@
+import mongoose from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import request from 'supertest';
+import jwt from 'jsonwebtoken';
+import app from '../app';
+import Member from '../models/member.model';
+
+jest.setTimeout(60_000);
+
+describe('GET /api/users (integration)', () => {
+  let mongo: MongoMemoryServer;
+
+  beforeAll(async () => {
+    mongo = await MongoMemoryServer.create();
+    const uri = mongo.getUri();
+    await mongoose.connect(uri, { dbName: 'test' });
+  });
+
+  beforeEach(async () => {
+    await Member.deleteMany({});
+    const docs = [];
+    for (let i = 0; i < 25; i++) {
+      docs.push({ nombre: `User ${i}`, email: `user${i}@example.com`, rol: i % 5 === 0 ? 'admin' : 'user', estado: 'activo' });
+    }
+    await Member.insertMany(docs);
+  });
+
+  afterAll(async () => {
+    await mongoose.disconnect();
+    if (mongo) await mongo.stop();
+  });
+
+  const makeToken = (payload: object) => jwt.sign(payload, process.env.JWT_SECRET || 'dev-secret');
+
+  test('requires authentication', async () => {
+    const res = await request(app).get('/api/users');
+    expect(res.status).toBe(401);
+    expect(res.body).toHaveProperty('error');
+  });
+
+  test('forbids non-admin users', async () => {
+    const token = makeToken({ id: 'u1', email: 'u1@example.com', rol: 'user' });
+    const res = await request(app).get('/api/users').set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(403);
+  });
+
+  test('returns paginated list for admin', async () => {
+    const token = makeToken({ id: 'admin', email: 'admin@example.com', rol: 'admin' });
+    const res = await request(app)
+      .get('/api/users')
+      .set('Authorization', `Bearer ${token}`)
+      .query({ page: 1, limit: 10 });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('items');
+    expect(res.body).toHaveProperty('total');
+    expect(res.body.items.length).toBeLessThanOrEqual(10);
+    expect(res.body.total).toBe(25);
+  });
+});
