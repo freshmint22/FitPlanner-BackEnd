@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import request from 'supertest';
 import app from '../app';
+import * as crypto from 'crypto';
 import Member from '../models/member.model';
 
 jest.setTimeout(60_000);
@@ -42,7 +43,6 @@ describe('GET /api/users (integration)', () => {
     const headerB64 = base64Url(JSON.stringify(header));
     const payloadB64 = base64Url(JSON.stringify({ ...payload, iat: Math.floor(Date.now() / 1000) }));
     const data = `${headerB64}.${payloadB64}`;
-    const crypto = require('crypto');
     const sig = crypto.createHmac('sha256', secret).update(data).digest('base64');
     const sigB64 = sig.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     return `${data}.${sigB64}`;

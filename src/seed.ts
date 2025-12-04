@@ -24,7 +24,7 @@ async function seed() {
     // If SEED_COUNT requested, create additional synthetic users
     if (seedCount > base.length) {
       const toCreate = seedCount - base.length;
-      const bulk: any[] = [];
+      const bulk: Array<Record<string, unknown>> = [];
       for (let i = 0; i < toCreate; i++) {
         const idx = i + 1;
         const email = `seed.user.${idx}@example.com`;
@@ -44,7 +44,9 @@ async function seed() {
         });
       }
       if (bulk.length) {
-        await Member.bulkWrite(bulk);
+        // bulkWrite expects specific bulk operation types; narrow cast to avoid type errors
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await Member.bulkWrite(bulk as any);
       }
       console.log(`Seeded ${seedCount} users (including ${base.length} base users)`);
     } else {

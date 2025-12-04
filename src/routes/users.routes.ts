@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
-import Member from '../models/member.model';
+import Member, { IMember } from '../models/member.model';
+import type { FilterQuery } from 'mongoose';
 import { requireAuth } from '../middleware/auth';
 
 const router = Router();
@@ -11,9 +12,13 @@ router.get('/profile', (_req, res) => {
 
 // GET /users - list users (powered by Member model)
 // Require authentication and admin role
-router.get('/', requireAuth, async (req: Request, res: Response) => {
+function escapeRegex(input: string) {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+router.get('/', requireAuth, async (req: Request & { user?: { rol?: string } }, res: Response) => {
   try {
-    const user = (req as any).user || {};
+    const user = req.user || {};
     if (user.rol !== 'admin') return res.status(403).json({ error: { code: 'forbidden', message: 'Requires admin role' } });
     const page = Math.max(1, parseInt((req.query.page as string) || '1', 10));
     const limitRaw = parseInt((req.query.limit as string) || '10', 10);
@@ -23,9 +28,11 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     const role = (req.query.role as string) || undefined;
     const status = (req.query.status as string) || undefined;
 
-    const filter: any = {};
+    const filter: FilterQuery<IMember> = {};
     if (q) {
-      const re = new RegExp(q, 'i');
+      const safe = escapeRegex(q);
+      // eslint-disable-next-line security/detect-non-literal-regexp
+      const re = new RegExp(safe, 'i');
       filter.$or = [{ nombre: re }, { email: re }];
     }
     if (role) filter.rol = role;
@@ -34,7 +41,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     const total = await Member.countDocuments(filter);
 
     // Build mongoose sort object from param like 'name,-createdAt'
-    const sort: any = {};
+    const sort: Record<string, 1 | -1> = {};
     for (const part of sortParam.split(',')) {
       const p = part.trim();
       if (!p) continue;
@@ -48,8 +55,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
       .limit(limit)
       .select('nombre email rol estado createdAt')
       .lean();
-
-    const mapped = items.map((it: any) => ({
+    const mapped = (items as IMember[]).map((it) => ({
       id: it._id,
       nombre: it.nombre,
       email: it.email,
