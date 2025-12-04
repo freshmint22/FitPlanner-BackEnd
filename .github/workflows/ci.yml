@@ -13,8 +13,6 @@ jobs:
     services:
       mongo:
         image: mongo:6
-        ports:
-          - 27017:27017
 
     env:
       MONGODB_URI: mongodb://mongo:27017/fitplanner
@@ -28,24 +26,29 @@ jobs:
         with:
           node-version: 18
           cache: npm
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: Backend/package-lock.json
 
       - name: Install dependencies
+        working-directory: ./Backend
         run: npm ci
 
       - name: Wait for mongo to be ready
         run: npx wait-on tcp:mongo:27017 --timeout 120000
 
       - name: Seed database
+        working-directory: ./Backend
         run: npm run seed
 
       - name: Lint
+        working-directory: ./Backend
         run: npm run lint
 
       - name: Validate commit messages (PR only)
         if: github.event_name == 'pull_request'
+        working-directory: ./Backend
         run: |
           npx --no -- commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.sha }} || true
 
       - name: Run tests
+        working-directory: ./Backend
         run: npm test
