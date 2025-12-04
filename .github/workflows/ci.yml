@@ -9,8 +9,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      MONGODB_URI: mongodb://mongo:27017/fitplanner
 
     services:
       mongo:
@@ -18,32 +16,38 @@ jobs:
         ports:
           - 27017:27017
         options: >-
-          --health-cmd="mongosh --eval 'db.adminCommand({ ping: 1 })'" 
-          --health-interval=10s 
-          --health-timeout=5s 
-          --health-retries=5
+          --health-cmd="mongo --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      MONGODB_URI: mongodb://mongo:27017/fitplanner
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 18 with npm cache
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'
-          cache-dependency-path: package-lock.json
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Wait for MongoDB to be ready
-        run: sleep 10
+      - name: Wait for mongo to accept connections
+        run: |
+          echo "Waiting for MongoDB..."
+          for i in {1..20}; do
+            nc -z mongo 27017 && echo "MongoDB is ready!" && break
+            echo "Mongo not ready yet..."
+            sleep 2
+          done
 
       - name: Seed database
         run: npm run seed
-        env:
-          MONGODB_URI: ${{ env.MONGODB_URI }}
 
       - name: Lint
         run: npm run lint
