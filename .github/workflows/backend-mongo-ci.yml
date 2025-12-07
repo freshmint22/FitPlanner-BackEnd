@@ -48,6 +48,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Wait for MongoDB (Corrected Host)
+        run: npx wait-on tcp:127.0.0.1:27017 --timeout 120000
+
       - name: Seed database
         run: npm run seed
 
