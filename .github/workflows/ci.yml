@@ -9,6 +9,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Backend
     env:
       MONGODB_URI: mongodb://localhost:27017/fitplanner
 
@@ -32,7 +35,7 @@ jobs:
           
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: package-lock.json 
+          cache-dependency-path: Backend/package-lock.json 
       
       # El caching automático de setup-node ya maneja las rutas de ~/.npm y node_modules
 
