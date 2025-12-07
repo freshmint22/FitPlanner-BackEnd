@@ -3,20 +3,12 @@ name: Backend CI (Mongo service)
 on:
   push:
     branches: [ main, develop ]
-    paths:
-      - "Backend/**"
   pull_request:
     branches: [ main, develop ]
-    paths:
-      - "Backend/**"
 
 jobs:
   test:
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: Backend
 
     services:
       mongo:
@@ -34,7 +26,7 @@ jobs:
         with:
           node-version: 18
           cache: 'npm'
-          cache-dependency-path: Backend/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
