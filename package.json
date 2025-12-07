@@ -4,6 +4,9 @@
   "private": true,
   "description": "FitPlanner backend - members CRUD (Express + TypeScript + Mongoose)",
   "main": "dist/index.js",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc -p .",
