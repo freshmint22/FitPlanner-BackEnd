@@ -9,74 +9,43 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      MONGODB_URI: mongodb://mongo:27017/fitplanner
 
     services:
       mongo:
         image: mongo:6
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd="mongosh --eval 'db.adminCommand({ ping: 1 })'" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    env:
+      MONGODB_URI: mongodb://mongo:27017/fitplanner
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Use Node.js 18
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
 
-      - name: Ensure cache paths exist (debug)
-        run: |
-          echo "Creating cache directories if missing"
-          mkdir -p Backend/node_modules
-          mkdir -p "$HOME/.npm"
-          echo "Cache paths prepared"
-
-      - name: Cache npm
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.npm
-            Backend/node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('Backend/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      - name: List repository (debug)
-        run: |
-          echo "Repository root: $PWD"
-          ls -la
-          echo "Contents of Backend:" || true
-          ls -la Backend || true
-
-      - name: Install backend dependencies
-        working-directory: Backend
+      - name: Install dependencies
         run: npm ci
 
-      - name: Wait for MongoDB to be ready
-        run: |
-          echo "Waiting for MongoDB..."
-          sleep 10
+      - name: Wait for mongo to be ready
+        run: npx wait-on tcp:mongo:27017 --timeout 120000
 
       - name: Seed database
-        run: npm run seed --prefix Backend
-        env:
-          MONGODB_URI: ${{ env.MONGODB_URI }}
+        run: npm run seed
 
       - name: Lint
-        run: npm run lint --prefix Backend
+        run: npm run lint
 
       - name: Validate commit messages (PR only)
         if: github.event_name == 'pull_request'
         run: |
-          echo "Running commitlint on PR commits"
-          npx --no -- commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.sha }} || true
+          npx --no -- commitlint \
+            --from=${{ github.event.pull_request.base.sha }} \
+            --to=${{ github.sha }} || true
 
       - name: Run tests
-        run: npm test --prefix Backend
+        run: npm test
