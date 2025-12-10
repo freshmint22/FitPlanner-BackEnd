@@ -85,45 +85,5 @@ jobs:
     defaults:
       run:
         working-directory: Backend
-    services:
-      postgres:
-        image: postgres:14
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: fitplanner_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-    env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fitplanner_test
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Cache npm
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('Backend/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Wait for Postgres (tcp)
-        run: npx wait-on tcp:127.0.0.1:5432 --timeout 120000
-
-      - name: Run tests (Postgres)
-        run: npm test -- --coverage --watchAll=false
-        env:
-          CI: true
+    # Postgres job removed — this project uses MongoDB (mongoose).
+    # If you later add Postgres-backed tests, recreate this job.
