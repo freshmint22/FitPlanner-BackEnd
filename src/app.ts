@@ -5,8 +5,9 @@ import membersRouter from './routes/members.routes';
 import routinesRouter from './routes/routines.routes';
 import usersRouter from './routes/users.routes';
 import authRouter from './routes/auth.routes';
-import attendanceRoutes from './routes/attendances.routes'; // ⬅️ NUEVO
-
+import attendanceRoutes from './routes/attendances.routes'; 
+import reportsRoutes from "./routes/reports.routes";      
+import paymentsRoutes from "./routes/payments.routes";     
 import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
@@ -36,6 +37,12 @@ app.use('/auth', authRouter);
 
 // ⬅️ NUEVA RUTA OFICIAL PARA ASISTENCIAS
 app.use('/api/attendances', attendanceRoutes);
+
+// ⬅️ NUEVA RUTA OFICIAL PARA REPORTES
+app.use("/reportes", reportsRoutes);
+
+// ⬅️ NUEVA RUTA OFICIAL PARA PAGOS
+app.use("/pagos", paymentsRoutes);
 
 /* ---------------------------
    MIDDLEWARE DE ERRORES

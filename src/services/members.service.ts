@@ -1,71 +1,92 @@
-import Member from '../models/member.model';
-import { MemberDTO } from '../models/member';
+import Member from "../models/member.model";
+import { createSimulatedPayment } from "./payments.service";
 
 /**
- * Listar miembros con paginación y filtros.
+ * Listar miembros con paginación y búsqueda
  */
-export async function listMembers(
-  page = 1,
-  limit = 10,
-  filtersOrQ: string | Record<string, unknown> = {}
-) {
-  const skip = (page - 1) * limit;
-  let query: Record<string, unknown> = {};
-
-  if (typeof filtersOrQ === 'string' && filtersOrQ.trim()) {
-    const q = filtersOrQ.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-    query = {
-      $or: [
-        { firstName: { $regex: q, $options: 'i' } },
-        { lastName: { $regex: q, $options: 'i' } },
-        { email: { $regex: q, $options: 'i' } }
-      ]
-    };
-  } else if (typeof filtersOrQ === 'object') {
-    query = { ...filtersOrQ };
-  }
+export const listMembers = async (page: number, limit: number, q?: string) => {
+  const query = q
+    ? {
+        $or: [
+          { firstName: new RegExp(q, "i") },
+          { lastName: new RegExp(q, "i") },
+          { email: new RegExp(q, "i") },
+        ],
+      }
+    : {};
 
   const [data, total] = await Promise.all([
     Member.find(query)
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 })
-      .lean(),
-
-    Member.countDocuments(query)
+      .skip((page - 1) * limit)
+      .limit(limit),
+    Member.countDocuments(query),
   ]);
 
   return { data, total };
-}
+};
 
 /**
- * Crear miembro nuevo.
+ * Crear miembro
  */
-export async function createMember(payload: MemberDTO) {
-  const doc = new Member(payload);
-  return doc.save();
-}
+export const createMember = async (memberData: any) => {
+  const newMember = new Member(memberData);
+  await newMember.save();
+  return newMember;
+};
 
 /**
- * Actualizar datos de un miembro (HU-19: Editar Perfil)
+ * Actualizar datos básicos del perfil
  */
-export async function updateMember(id: string, payload: Partial<MemberDTO>) {
-  const updated = await Member.findByIdAndUpdate(id, payload, {
+export const updateMember = async (id: string, updateData: any) => {
+  const updated = await Member.findByIdAndUpdate(id, updateData, {
     new: true,
-    runValidators: true
-  }).lean();
-
-  if (!updated) {
-    throw new Error("Usuario no encontrado");
-  }
-
+  });
   return updated;
-}
+};
 
 /**
- * Eliminar un miembro.
+ * Eliminar miembro
  */
-export async function deleteMember(id: string) {
-  return Member.findByIdAndDelete(id).lean();
-}
+export const deleteMember = async (id: string) => {
+  await Member.findByIdAndDelete(id);
+};
+
+/**
+ * Actualizar membresía + registrar pago
+ */
+export const updateMembership = async (
+  memberId: string,
+  membershipData: {
+    name: string;
+    price: number;
+    duration: number;
+  }
+) => {
+  const member = await Member.findById(memberId);
+  if (!member) throw new Error("Miembro no encontrado");
+
+  // fechas
+  const startDate = new Date();
+  const endDate = new Date(
+    startDate.getTime() + membershipData.duration * 24 * 60 * 60 * 1000
+  );
+
+  // actualizar membresía
+  member.membership = {
+    name: membershipData.name,
+    price: membershipData.price,
+    duration: membershipData.duration,
+    startDate,
+    endDate,
+  };
+
+  await member.save();
+
+  // registrar pago
+  await createSimulatedPayment({
+    memberId: member._id.toString(),
+    amount: membershipData.price,
+  });
+
+  return member;
+};

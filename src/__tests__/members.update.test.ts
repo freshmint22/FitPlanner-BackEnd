@@ -2,12 +2,16 @@ import request from "supertest";
 import app from "../app";
 import Member from "../models/member.model";
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 beforeAll(async () => {
-  // Conexión a la DB de pruebas
   const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
   await mongoose.connect(uri!);
+});
+
+beforeEach(async () => {
+  await Member.deleteMany({});
 });
 
 afterAll(async () => {
@@ -15,9 +19,6 @@ afterAll(async () => {
   await mongoose.connection.close();
 });
 
-/**
- * Función que genera tokens igual que tu backend
- */
 const genToken = (userId: string) => {
   return jwt.sign(
     { id: userId, rol: "user" },
@@ -27,13 +28,16 @@ const genToken = (userId: string) => {
 };
 
 describe("PUT /members/:id – Editar perfil", () => {
+
   it("debe actualizar su propio perfil correctamente", async () => {
-    // Crear usuario real en la DB
+
+    const hashed = await bcrypt.hash("Password123", 10);
+
     const user = await Member.create({
       firstName: "Juan",
       lastName: "Díaz",
       email: "juan@test.com",
-      phone: "12345",
+      password: hashed,
       rol: "user",
       estado: "activo"
     });
@@ -54,11 +58,14 @@ describe("PUT /members/:id – Editar perfil", () => {
   });
 
   it("debe impedir actualizar el perfil de otro usuario", async () => {
+
+    const hashed = await bcrypt.hash("Password123", 10);
+
     const user1 = await Member.create({
       firstName: "Luis",
       lastName: "Gómez",
       email: "luis@test.com",
-      phone: "12345",
+      password: hashed,
       rol: "user",
       estado: "activo"
     });
@@ -67,7 +74,7 @@ describe("PUT /members/:id – Editar perfil", () => {
       firstName: "Ana",
       lastName: "Paz",
       email: "ana@test.com",
-      phone: "98765",
+      password: hashed,
       rol: "user",
       estado: "activo"
     });
