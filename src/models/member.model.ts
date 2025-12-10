@@ -20,6 +20,10 @@ export interface IMember extends Document {
     endDate: Date;
   };
 
+  // 🔥 AGREGADOS PARA PLANES
+  planActual?: string | null;
+  fechaCambioPlan?: Date;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -63,6 +67,15 @@ const MemberSchema = new Schema<IMember>(
         endDate: { type: Date }
       },
       required: false
+    },
+
+    // 🔥 CAMPOS NUEVOS PARA MANEJO DE PLANES
+    planActual: {
+      type: String,
+      default: null
+    },
+    fechaCambioPlan: {
+      type: Date
     }
   },
   { timestamps: true }
