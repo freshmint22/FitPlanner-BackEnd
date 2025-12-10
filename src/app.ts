@@ -1,9 +1,12 @@
 import express from 'express';
 import cors from 'cors';
+
 import membersRouter from './routes/members.routes';
 import routinesRouter from './routes/routines.routes';
 import usersRouter from './routes/users.routes';
 import authRouter from './routes/auth.routes';
+import attendanceRoutes from './routes/attendances.routes'; // ⬅️ NUEVO
+
 import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
@@ -11,12 +14,32 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+/* ---------------------------
+   RUTAS PARA LOS TESTS
+---------------------------- */
+
+// HU-19 → Jest usa /members/:id
+app.use('/members', membersRouter);
+
+/* ---------------------------
+   RUTAS OFICIALES DE LA API
+---------------------------- */
+
 app.use('/api/miembros', membersRouter);
 app.use('/routines', routinesRouter);
 app.use('/users', usersRouter);
-// expose users also under /api/users for frontend consistency
+
+// Soporte legacy para frontend
 app.use('/api/users', usersRouter);
+
 app.use('/auth', authRouter);
+
+// ⬅️ NUEVA RUTA OFICIAL PARA ASISTENCIAS
+app.use('/api/attendances', attendanceRoutes);
+
+/* ---------------------------
+   MIDDLEWARE DE ERRORES
+---------------------------- */
 
 app.use(errorHandler);
 
