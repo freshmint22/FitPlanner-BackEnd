@@ -16,18 +16,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Cache npm
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('Backend/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
+          cache-dependency-path: Backend/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -54,18 +48,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Cache npm
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('Backend/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
+          cache-dependency-path: Backend/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -85,5 +73,3 @@ jobs:
     defaults:
       run:
         working-directory: Backend
-    # Postgres job removed — this project uses MongoDB (mongoose).
-    # If you later add Postgres-backed tests, recreate this job.
