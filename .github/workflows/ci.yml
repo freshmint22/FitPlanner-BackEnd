@@ -16,18 +16,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('Backend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-          cache-dependency-path: Backend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --prefix Backend
 
       - name: Lint
-        run: npm run lint
+        run: npm --prefix Backend run lint
 
   test-mongo:
     name: Test (Mongo)
@@ -48,24 +54,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('Backend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-          cache-dependency-path: Backend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --prefix Backend
 
-      - name: Wait for MongoDB
-        run: ./node_modules/.bin/wait-on tcp:127.0.0.1:27017 --timeout 120000
+      - name: Wait for MongoDB (tcp)
+        run: npx wait-on tcp:127.0.0.1:27017 --timeout 120000
 
       - name: Seed database
-        run: npm run seed
+        run: npm --prefix Backend run seed
 
       - name: Run tests
-        run: npm test
+        run: npm --prefix Backend test
 
   test-postgres:
     name: Test (Postgres)
@@ -92,17 +104,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('Backend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-          cache-dependency-path: Backend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --prefix Backend
+
+      - name: Wait for Postgres (tcp)
+        run: npx wait-on tcp:127.0.0.1:5432 --timeout 120000
 
       - name: Run tests (Postgres)
-        run: npm test -- --coverage --watchAll=false
+        run: npm --prefix Backend test -- --coverage --watchAll=false
         env:
           CI: true
