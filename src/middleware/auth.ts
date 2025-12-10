@@ -8,7 +8,7 @@ export interface UserPayload {
   id: string;
   email?: string;
   rol?: string;
-  [key: string]: any; // por si el JWT trae más cosas
+  [key: string]: unknown; // por si el JWT trae más cosas (no usamos `any`)
 }
 
 const getSecret = () =>
@@ -43,7 +43,7 @@ export const requireAuth = async (
 
     req.user = payload as UserPayload;
     return next();
-  } catch (e) {
+  } catch {
     // --------------------------------------------
     // 2do intento: Validación manual HS256 (fallback)
     // --------------------------------------------
@@ -81,7 +81,7 @@ export const requireAuth = async (
 
       req.user = payload as UserPayload;
       return next();
-    } catch (e2) {
+    } catch {
       return res.status(401).json({
         error: { code: 'unauth', message: 'Invalid token' }
       });

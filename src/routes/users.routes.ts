@@ -43,6 +43,8 @@ router.get(
 
       if (q) {
         const safe = escapeRegex(q);
+        // `safe` is escaped so using RegExp here is safe; disable the rule for this line.
+        /* eslint-disable-next-line security/detect-non-literal-regexp */
         const re = new RegExp(safe, "i");
         filter.$or = [{ firstName: re }, { lastName: re }, { email: re }];
       }
