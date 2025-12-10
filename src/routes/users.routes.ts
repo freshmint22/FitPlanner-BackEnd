@@ -122,7 +122,11 @@ router.get(
       // construir DTO compatible con frontend
       const dto = {
         id: member._id?.toString(),
-        firstName: member.firstName || (member as any).nombre || '',
+        firstName:
+          member.firstName ??
+          (typeof (member as unknown as Record<string, unknown>).nombre === 'string'
+            ? ((member as unknown as Record<string, unknown>).nombre as string)
+            : ''),
         lastName: member.lastName || '',
         email: member.email,
         rol: member.rol,

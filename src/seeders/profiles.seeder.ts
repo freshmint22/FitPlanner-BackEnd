@@ -1,4 +1,5 @@
 import { connectDB, disconnectDB } from '../db';
+import { Types } from 'mongoose';
 import Member from '../models/member.model';
 import Membership from '../models/membership.model';
 import Payment from '../models/payment.model';
@@ -20,7 +21,7 @@ async function seedProfiles(count = 50) {
   }
 
   // create additional synthetic members
-  const createdMembers = [];
+  const createdMembers: Array<{ _id: Types.ObjectId | string }> = [];
   for (let i = 0; i < count; i++) {
     const email = `seed.user.${i}@example.com`;
     const nombre = `Seed User ${i}`;
@@ -30,7 +31,7 @@ async function seedProfiles(count = 50) {
       { $set: { nombre, email, rol, estado: 'activo', password: 'pass' } },
       { upsert: true, new: true }
     ).lean();
-    if (up) createdMembers.push(up as any);
+    if (up) createdMembers.push(up as unknown as { _id: Types.ObjectId | string });
   }
 
   // For each created member, add a membership, payment and some attendances
