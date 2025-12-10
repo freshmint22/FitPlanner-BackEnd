@@ -20,7 +20,7 @@ describe('GET /api/users (integration)', () => {
     await Member.deleteMany({});
     const docs = [];
     for (let i = 0; i < 25; i++) {
-      docs.push({ nombre: `User ${i}`, email: `user${i}@example.com`, rol: i % 5 === 0 ? 'admin' : 'user', estado: 'activo' });
+      docs.push({ firstName: `User ${i}`, email: `user${i}@example.com`, password: '123456', rol: i % 5 === 0 ? 'admin' : 'user', estado: 'activo' });
     }
     await Member.insertMany(docs);
   });

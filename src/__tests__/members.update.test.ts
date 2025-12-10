@@ -4,15 +4,20 @@ import Member from "../models/member.model";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 
+import { MongoMemoryServer } from 'mongodb-memory-server';
+
+let mongo: MongoMemoryServer;
 beforeAll(async () => {
-  // Conexión a la DB de pruebas
-  const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
-  await mongoose.connect(uri!);
+  // Conexión a la DB de pruebas con servidor en memoria
+  mongo = await MongoMemoryServer.create();
+  const uri = mongo.getUri();
+  await mongoose.connect(uri);
 });
 
 afterAll(async () => {
   await mongoose.connection.dropDatabase();
   await mongoose.connection.close();
+  if (mongo) await mongo.stop();
 });
 
 /**
@@ -34,6 +39,7 @@ describe("PUT /members/:id – Editar perfil", () => {
       lastName: "Díaz",
       email: "juan@test.com",
       phone: "12345",
+      password: "123456",
       rol: "user",
       estado: "activo"
     });
@@ -59,6 +65,7 @@ describe("PUT /members/:id – Editar perfil", () => {
       lastName: "Gómez",
       email: "luis@test.com",
       phone: "12345",
+      password: "123456",
       rol: "user",
       estado: "activo"
     });
@@ -68,6 +75,7 @@ describe("PUT /members/:id – Editar perfil", () => {
       lastName: "Paz",
       email: "ana@test.com",
       phone: "98765",
+      password: "123456",
       rol: "user",
       estado: "activo"
     });
