@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import Attendance from "../models/attendance.model";
+import type { FilterQuery } from "mongoose";
 
 /**
  * GET /api/attendances/list
@@ -12,7 +13,7 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
     // Parámetros opcionales de filtrado
     const { startDate, endDate } = req.query;
 
-    const filter: any = { memberId: userId };
+    const filter: FilterQuery<Record<string, unknown>> = { memberId: userId };
 
     // Filtrar por fecha si vienen los parámetros
     if (startDate || endDate) {

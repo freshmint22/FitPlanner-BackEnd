@@ -1,5 +1,8 @@
 import { Router, Request, Response } from "express";
 import Member, { IMember } from "../models/member.model";
+import Membership from "../models/membership.model";
+import Payment from "../models/payment.model";
+import Attendance from "../models/attendance.model";
 import type { FilterQuery } from "mongoose";
 import { requireAuth } from "../middleware/auth";
 import { changePassword } from "../controllers/members.controller";
@@ -43,6 +46,8 @@ router.get(
 
       if (q) {
         const safe = escapeRegex(q);
+        // `safe` is escaped so using RegExp here is safe; disable the rule for this line.
+        /* eslint-disable-next-line security/detect-non-literal-regexp */
         const re = new RegExp(safe, "i");
         filter.$or = [{ firstName: re }, { lastName: re }, { email: re }];
       }
@@ -80,4 +85,65 @@ router.get(
 // ==============================
 router.patch("/password", requireAuth, changePassword);
 
+// GET /users/:id - Obtener perfil de usuario
+router.get(
+  "/:id",
+  requireAuth,
+  async (req: Request & { user?: { id?: string; rol?: string } }, res: Response) => {
+    try {
+      const { id } = req.params;
+
+      // validar formato ObjectId
+      const mongoose = await import('mongoose');
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: { code: 'invalid_id', message: 'Invalid id format' } });
+      }
+
+      // autorización: admin puede ver cualquier perfil; usuario puede ver su propio perfil
+      const requesterId = req.user?.id;
+      const requesterRole = req.user?.rol;
+
+      const member = await Member.findById(id).lean();
+      if (!member) {
+        return res.status(404).json({ error: { code: 'not_found', message: 'User not found' } });
+      }
+
+      if (requesterId !== id && requesterRole !== 'admin') {
+        return res.status(403).json({ error: { code: 'forbidden', message: 'Requires admin role or owner' } });
+      }
+
+      // cargar relaciones recientes (limitadas) para compatibilidad con frontend
+      const [memberships, payments, activity] = await Promise.all([
+        Membership.find({ memberId: member._id }).sort({ startsAt: -1 }).limit(10).lean(),
+        Payment.find({ memberId: member._id }).sort({ createdAt: -1 }).limit(10).lean(),
+        Attendance.find({ memberId: member._id }).sort({ date: -1 }).limit(10).lean(),
+      ]);
+
+      // construir DTO compatible con frontend
+      const dto = {
+        id: member._id?.toString(),
+        firstName:
+          member.firstName ??
+          (typeof (member as unknown as Record<string, unknown>).nombre === 'string'
+            ? ((member as unknown as Record<string, unknown>).nombre as string)
+            : ''),
+        lastName: member.lastName || '',
+        email: member.email,
+        rol: member.rol,
+        estado: member.estado,
+        createdAt: member.createdAt,
+        memberships: memberships.map((m) => ({ planName: m.planName, startsAt: m.startsAt, endsAt: m.endsAt, active: m.active })),
+        payments: payments.map((p) => ({ amount: p.amount, currency: p.currency, status: p.status, createdAt: p.createdAt })),
+        activity: activity.map((a) => ({ date: a.date, classId: a.classId })),
+      } as const;
+
+      return res.json({ item: dto });
+    } catch (err) {
+      console.error('GET /users/:id error', err);
+      return res.status(500).json({ error: { code: 'server_error', message: 'Internal error' } });
+    }
+  }
+);
+
 export default router;
+

@@ -145,7 +145,7 @@ export const changePassword = async (
 
     return res.json({ message: "Contraseña actualizada exitosamente" });
 
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Error al cambiar contraseña:", err);
     return res.status(500).json({ message: "Error interno del servidor" });
   }

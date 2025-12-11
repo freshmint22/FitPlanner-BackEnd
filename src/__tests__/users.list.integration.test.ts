@@ -17,10 +17,14 @@ beforeEach(async () => {
   await Member.deleteMany({});
 });
 
-afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-});
+  beforeEach(async () => {
+    await Member.deleteMany({});
+    const docs = [];
+    for (let i = 0; i < 25; i++) {
+      docs.push({ firstName: `User ${i}`, email: `user${i}@example.com`, password: '123456', rol: i % 5 === 0 ? 'admin' : 'user', estado: 'activo' });
+    }
+    await Member.insertMany(docs);
+  });
 
 describe("GET /api/users (integration)", () => {
 

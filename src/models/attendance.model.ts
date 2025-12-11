@@ -9,6 +9,8 @@ const AttendanceSchema = new Schema(
   { timestamps: true }
 );
 
+AttendanceSchema.index({ memberId: 1, date: -1 });
+
 const Attendance = model("Attendance", AttendanceSchema);
 
 export default Attendance;

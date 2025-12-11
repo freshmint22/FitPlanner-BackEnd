@@ -16,5 +16,5 @@ const PaymentSchema = new Schema<PaymentDocument>(
   },
   { timestamps: true }
 );
-
+ 
 export default model<PaymentDocument>("Payment", PaymentSchema);

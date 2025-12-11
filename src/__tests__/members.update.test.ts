@@ -5,6 +5,9 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+import { MongoMemoryServer } from 'mongodb-memory-server';
+
+let mongo: MongoMemoryServer;
 beforeAll(async () => {
   const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
   await mongoose.connect(uri!);
@@ -17,6 +20,7 @@ beforeEach(async () => {
 afterAll(async () => {
   await mongoose.connection.dropDatabase();
   await mongoose.connection.close();
+  if (mongo) await mongo.stop();
 });
 
 const genToken = (userId: string) => {
