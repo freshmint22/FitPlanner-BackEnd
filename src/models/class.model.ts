@@ -1,3 +1,24 @@
+import mongoose, { Document, Schema } from 'mongoose';
+
+export interface IClass extends Document {
+  title: string;
+  description?: string;
+  capacity?: number;
+  schedule?: Date;
+  trainerId?: mongoose.Types.ObjectId | string;
+  createdAt?: Date;
+}
+
+const ClassSchema = new Schema<IClass>({
+  title: { type: String, required: true },
+  description: { type: String },
+  capacity: { type: Number, default: 20 },
+  schedule: { type: Date },
+  trainerId: { type: Schema.Types.ObjectId, ref: 'Member' },
+  createdAt: { type: Date, default: () => new Date() },
+});
+
+export default mongoose.models.Class || mongoose.model<IClass>('Class', ClassSchema);
 import { Schema, model, Document } from "mongoose";
 
 export interface IClass extends Document {

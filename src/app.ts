@@ -5,6 +5,8 @@ import membersRouter from "./routes/members.routes";
 import routinesRouter from "./routes/routines.routes";
 import usersRouter from "./routes/users.routes";
 import authRouter from "./routes/auth.routes";
+import classesRouter from "./routes/classes.routes";
+import routinesRouter2 from "./routes/routines.routes";
 import attendanceRoutes from "./routes/attendances.routes";
 import reportsRoutes from "./routes/reports.routes";
 import paymentsRoutes from "./routes/payments.routes";
@@ -27,6 +29,8 @@ app.use("/api/miembros", membersRouter);
 
 app.use("/routines", routinesRouter);
 app.use("/users", usersRouter);
+app.use('/classes', classesRouter);
+app.use('/routines', routinesRouter2);
 
 app.use("/auth", authRouter);
 

@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
-let mongo: MongoMemoryServer;
+let mongo: MongoMemoryServer | undefined;
 beforeAll(async () => {
   const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
   await mongoose.connect(uri!);

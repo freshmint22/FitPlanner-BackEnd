@@ -133,7 +133,12 @@ router.get(
         estado: member.estado,
         createdAt: member.createdAt,
         memberships: memberships.map((m) => ({ planName: m.planName, startsAt: m.startsAt, endsAt: m.endsAt, active: m.active })),
-        payments: payments.map((p) => ({ amount: p.amount, currency: p.currency, status: p.status, createdAt: p.createdAt })),
+        payments: payments.map((p: any) => ({
+          amount: (p && (p.amount ?? p.total ?? 0)) as number,
+          currency: (p && (p.currency ?? p.moneda ?? null)) as string | null,
+          status: (p && (p.status ?? p.estado ?? null)) as string | null,
+          createdAt: (p && (p.createdAt ?? p.created_at ?? null)) as string | Date | null,
+        })),
         activity: activity.map((a) => ({ date: a.date, classId: a.classId })),
       } as const;
 
