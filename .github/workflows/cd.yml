@@ -1,0 +1,30 @@
+name: CD Backend
+
+on:
+  push:
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-build
+          path: dist/
+
+      - name: Deploy to Render (placeholder)
+        run: |
+          # Aquí va el comando para deploy a Render, Vercel, Railway, etc.
+          # Ejemplo para Render: curl -X POST https://api.render.com/v1/services/srv-xxx/deploys -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}"
+          echo "Deploy backend to your hosting service (e.g., Render, Railway)"
+          echo "Artifact downloaded to dist/"
+
+      - name: Output deployment URL
+        run: echo "Backend deployed to https://your-backend-url.com"
