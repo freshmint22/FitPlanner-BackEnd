@@ -8,7 +8,7 @@ export interface IReservation extends Document {
 }
 
 const ReservationSchema = new Schema<IReservation>({
-  memberId: { type: Schema.Types.ObjectId, ref: 'Member', required: true },
+  memberId: { type: String, required: true },
   classId: { type: Schema.Types.ObjectId, ref: 'Class', required: true },
   status: { type: String, enum: ['booked', 'cancelled', 'attended'], default: 'booked' },
   reservedAt: { type: Date, default: () => new Date() },

@@ -29,6 +29,7 @@ app.use("/api/miembros", membersRouter);
 
 app.use("/routines", routinesRouter);
 app.use("/users", usersRouter);
+app.use("/api/users", usersRouter);
 app.use('/classes', classesRouter);
 app.use('/routines', routinesRouter2);
 
@@ -40,6 +41,9 @@ app.use("/reportes", reportsRoutes);
 app.use("/pagos", paymentsRoutes);
 
 app.use("/notifications", notificationsRoutes);
+// Mount notifications routes at root so legacy paths like
+// `/configuracion/notificaciones` used in tests resolve correctly.
+app.use("/", notificationsRoutes);
 app.use("/", gymInfoRoutes);
 
 app.use("/planes", plansRoutes);

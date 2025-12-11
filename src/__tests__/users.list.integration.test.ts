@@ -9,8 +9,10 @@ const genToken = (id: string, rol: string) =>
   jwt.sign({ id, rol }, process.env.JWT_SECRET || "dev-secret");
 
 beforeAll(async () => {
-  const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
-  await mongoose.connect(uri!);
+  if (mongoose.connection.readyState === 0) {
+    const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
+    await mongoose.connect(uri!);
+  }
 });
 
 beforeEach(async () => {
