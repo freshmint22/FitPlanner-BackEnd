@@ -9,7 +9,7 @@ on:
 jobs:
   backend-ci:
     name: Backend CI (lint → test → build → audit → artifact)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     defaults:
       run:
         working-directory: .
