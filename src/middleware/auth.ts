@@ -89,3 +89,23 @@ export const requireAuth = async (
   }
 };
 
+// ----------------------------------------------------------
+// Middlewares adicionales: validarJWT y isAdmin
+// ----------------------------------------------------------
+
+export const validarJWT = requireAuth;
+
+export const isAdmin = (
+  req: Request & { user?: UserPayload },
+  res: Response,
+  next: NextFunction
+) => {
+  if (!req.user || req.user.rol !== "admin") {
+    return res.status(403).json({
+      ok: false,
+      msg: "No autorizado — solo administradores"
+    });
+  }
+
+  next();
+};

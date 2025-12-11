@@ -5,8 +5,8 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import Attendance from "../models/attendance.model";
 import Member from "../models/member.model";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 
-// Igual que tu backend
 const genToken = (userId: string) =>
   jwt.sign(
     { id: userId, rol: "user" },
@@ -20,7 +20,6 @@ beforeAll(async () => {
   await mongoose.connect(uri);
 });
 
-// ⭐ LIMPIAR TODO ANTES DE CADA TEST (igual que change password)
 beforeEach(async () => {
   await Attendance.deleteMany({});
   await Member.deleteMany({});
@@ -37,12 +36,14 @@ describe("GET /api/attendances/list", () => {
   let token: string;
 
   beforeEach(async () => {
-    // Crear usuario real en DB
+
+    const hashed = await bcrypt.hash("123456", 10);
+
     const user = await Member.create({
       firstName: "Valen",
       lastName: "Test",
       email: "valen@test.com",
-      password: "123456",
+      password: hashed,
       rol: "user",
       estado: "activo",
     });
@@ -77,7 +78,6 @@ describe("GET /api/attendances/list", () => {
   });
 
   it("Debe evitar que un usuario vea asistencias de otro usuario", async () => {
-    // 🔥 Ahora sí enviamos un ObjectId válido (NO un string cualquiera)
     const anotherId = new mongoose.Types.ObjectId().toString();
     const anotherToken = genToken(anotherId);
 

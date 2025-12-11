@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import { UserPayload } from "../middleware/auth";
 
 /**
- * Obtener lista de miembros con paginación y búsqueda.
+ * Obtener lista de miembros
  */
 export const getMembers = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -22,7 +22,7 @@ export const getMembers = async (req: Request, res: Response, next: NextFunction
 };
 
 /**
- * Crear miembro.
+ * Crear miembro
  */
 export const createMember = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -34,15 +34,14 @@ export const createMember = async (req: Request, res: Response, next: NextFuncti
 };
 
 /**
- * Actualizar información del perfil (HU-19)
- * Solo el dueño del perfil puede actualizar sus datos.
+ * Actualizar perfil
  */
 export const updateMember = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const memberId = req.params.id;
 
     if (!req.user || String(req.user.id) !== String(memberId)) {
-      return res.status(403).json({ message: "No autorizado para editar este perfil" });
+      return res.status(403).json({ message: "No autorizado" });
     }
 
     const updatedMember = await memberService.updateMember(memberId, req.body);
@@ -57,18 +56,51 @@ export const updateMember = async (req: Request, res: Response, next: NextFuncti
 };
 
 /**
- * Eliminar miembro.
+ * NUEVO: Actualizar membresía + registrar pago
  */
-export const deleteMember = async (req: Request, res: Response, next: NextFunction) => {
+export const updateMemberMembership = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
-    await memberService.deleteMember(id);
-    res.status(204).send();
+    const { memberId } = req.params;
+    const { name, price, duration } = req.body;
+
+    // 🔥 VALIDACIÓN IMPORTANTE
+    if (!req.user || req.user.id !== memberId) {
+      return res.status(403).json({ message: "No autorizado para actualizar esta membresía" });
+    }
+
+    if (!name || !price || !duration) {
+      return res.status(400).json({ message: "Faltan datos de la membresía" });
+    }
+
+    const updatedMember = await memberService.updateMembership(memberId, {
+      name,
+      price,
+      duration,
+    });
+
+    res.json({
+      status: "success",
+      message: "Membresía actualizada y pago registrado correctamente",
+      data: updatedMember,
+    });
+
   } catch (err) {
     next(err);
   }
 };
 
+
+/**
+ * Eliminar miembro
+ */
+export const deleteMember = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await memberService.deleteMember(req.params.id);
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+};
 /**
  * Cambiar contraseña (HU-21)
  */
@@ -118,3 +150,4 @@ export const changePassword = async (
     return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
+

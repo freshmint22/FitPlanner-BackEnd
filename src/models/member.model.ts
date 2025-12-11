@@ -1,29 +1,47 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document } from "mongoose";
 
 export interface IMember extends Document {
   firstName?: string;
   lastName?: string;
   email: string;
-  password: string;   
+  password: string;
   phone?: string;
   birthDate?: Date;
-  gender?: 'Masculino' | 'Femenino' | 'Otro';
+  gender?: "Masculino" | "Femenino" | "Otro";
   profileImage?: string;
-  rol: 'admin' | 'user' | string;
-  estado: 'activo' | 'inactivo' | string;
+  rol: "admin" | "user" | string;
+  estado: "activo" | "inactivo" | string;
+
+  membership?: {
+    name: string;
+    price: number;
+    duration: number;
+    startDate: Date;
+    endDate: Date;
+  };
+
+  // 🔥 AGREGADOS PARA PLANES
+  planActual?: string | null;
+  fechaCambioPlan?: Date;
+
   createdAt: Date;
   updatedAt: Date;
 }
-
 
 const MemberSchema = new Schema<IMember>(
   {
     firstName: { type: String, trim: true, required: false },
     lastName: { type: String, trim: true, required: false },
 
-    email: { type: String, required: true, unique: true, index: true, lowercase: true },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+      lowercase: true
+    },
 
-    password: { type: String, required: true }, 
+    password: { type: String, required: true },
     phone: { type: String, trim: true },
 
     birthDate: { type: Date },
@@ -36,13 +54,33 @@ const MemberSchema = new Schema<IMember>(
 
     profileImage: { type: String },
 
-    rol: { type: String, default: 'user' },
+    rol: { type: String, default: "user" },
 
-    estado: { type: String, default: 'activo' }
+    estado: { type: String, default: "activo" },
+
+    membership: {
+      type: {
+        name: { type: String },
+        price: { type: Number },
+        duration: { type: Number },
+        startDate: { type: Date },
+        endDate: { type: Date }
+      },
+      required: false
+    },
+
+    // 🔥 CAMPOS NUEVOS PARA MANEJO DE PLANES
+    planActual: {
+      type: String,
+      default: null
+    },
+    fechaCambioPlan: {
+      type: Date
+    }
   },
   { timestamps: true }
 );
 
-const Member = model<IMember>('Member', MemberSchema);
+const Member = model<IMember>("Member", MemberSchema);
 
 export default Member;

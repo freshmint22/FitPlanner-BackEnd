@@ -1,26 +1,28 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document } from "mongoose";
 
-export interface IPayment extends Document {
-  memberId: Schema.Types.ObjectId | string;
+export interface PaymentDocument extends Document {
+  memberId: string;
   amount: number;
-  currency: string;
-  status: 'paid' | 'failed' | 'pending' | string;
-  createdAt: Date;
-  updatedAt: Date;
+  date: Date;
+  method: string;
 }
 
-const PaymentSchema = new Schema<IPayment>(
+const PaymentSchema = new Schema<PaymentDocument>(
   {
-    memberId: { type: Schema.Types.ObjectId, ref: 'Member', required: true, index: true },
+    memberId: { type: String, required: true },
     amount: { type: Number, required: true },
-    currency: { type: String, default: 'EUR' },
-    status: { type: String, default: 'paid' }
+    date: { type: Date, default: Date.now },
+    method: { type: String, default: "Simulado" }
   },
   { timestamps: true }
 );
 
+<<<<<<< HEAD
 PaymentSchema.index({ memberId: 1, createdAt: -1 });
 
 const Payment = model<IPayment>('Payment', PaymentSchema);
 
 export default Payment;
+=======
+export default model<PaymentDocument>("Payment", PaymentSchema);
+>>>>>>> origin/LVAL
