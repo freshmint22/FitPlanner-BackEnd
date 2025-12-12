@@ -19,13 +19,21 @@ import generalConfigRoutes from "./routes/generalConfig.routes";
 
 const app = express();
 
-// Configure CORS to allow credentials and a restricted origin.
-// Use BACKEND_CORS_ORIGIN env var in production to set the frontend URL.
-const allowedOrigin = process.env.BACKEND_CORS_ORIGIN || 'http://localhost:5173';
+// Configure CORS to allow credentials and a restricted origin list.
+// BACKEND_CORS_ORIGIN can be a single URL or comma-separated URLs.
+const allowedOrigins = (process.env.BACKEND_CORS_ORIGIN || 'http://localhost:5173')
+	.split(',')
+	.map((o) => o.trim())
+	.filter(Boolean);
 
 app.use(
 	cors({
-		origin: allowedOrigin,
+		origin: (origin, callback) => {
+			if (!origin) return callback(null, true); // allow non-browser clients
+			return allowedOrigins.includes(origin)
+				? callback(null, true)
+				: callback(new Error('Not allowed by CORS'));
+		},
 		credentials: true,
 	})
 );
