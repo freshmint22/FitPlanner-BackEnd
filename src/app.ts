@@ -19,7 +19,16 @@ import generalConfigRoutes from "./routes/generalConfig.routes";
 
 const app = express();
 
-app.use(cors());
+// Configure CORS to allow credentials and a restricted origin.
+// Use BACKEND_CORS_ORIGIN env var in production to set the frontend URL.
+const allowedOrigin = process.env.BACKEND_CORS_ORIGIN || 'http://localhost:5173';
+
+app.use(
+	cors({
+		origin: allowedOrigin,
+		credentials: true,
+	})
+);
 app.use(express.json());
 
 
