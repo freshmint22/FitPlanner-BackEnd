@@ -1,9 +1,13 @@
-import { Router } from 'express';
+import { Router } from "express";
+import { requireAuth } from "../middleware/auth";
+import {
+  crearRutina,
+  listarRutinas
+} from "../controllers/routines.controller";
 
 const router = Router();
 
-router.get('/', (_req, res) => {
-  res.status(200).json([]);
-});
+router.post("/", requireAuth, crearRutina);
+router.get("/", requireAuth, listarRutinas);
 
 export default router;
