@@ -6,13 +6,12 @@ import Attendance from "../models/attendance.model";
 import type { FilterQuery } from "mongoose";
 import { requireAuth } from "../middleware/auth";
 import { changePassword } from "../controllers/members.controller";
+import { getProfile } from "../controllers/auth.controller";
 
 const router = Router();
 
-// Endpoint usado en pruebas
-router.get("/profile", (_req, res) => {
-  res.status(200).json({ email: "test@example.com" });
-});
+// Endpoint de perfil con autenticación
+router.get("/profile", requireAuth, getProfile);
 
 // Función para sanear búsquedas regex
 function escapeRegex(input: string) {
