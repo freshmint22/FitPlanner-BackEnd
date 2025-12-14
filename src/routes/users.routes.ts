@@ -85,6 +85,12 @@ router.get(
 // ==============================
 router.patch("/password", requireAuth, changePassword);
 
+// ==============================
+// NUEVA RUTA: ELIMINAR CUENTA
+// ==============================
+import { deleteAccount } from "../controllers/members.controller";
+router.delete("/account", requireAuth, deleteAccount);
+
 // GET /users/:id - Obtener perfil de usuario
 router.get(
   "/:id",
