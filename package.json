@@ -12,7 +12,7 @@
     "test": "jest --runInBand",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
-  "prepare": "husky install || true",
+    "prepare": "husky install || true",
     "commitlint": "commitlint --from=$GIT_BASE --to=HEAD || true"
   },
   "repository": {
@@ -23,6 +23,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/node-fetch": "^2.6.13",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "exceljs": "^4.4.0",
@@ -30,6 +31,7 @@
     "jose": "^6.1.3",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^7.4.0",
+    "node-fetch": "^2.6.7",
     "pdfkit": "^0.17.2"
   },
   "devDependencies": {
