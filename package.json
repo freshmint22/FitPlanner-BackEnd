@@ -12,7 +12,7 @@
     "test": "jest --runInBand",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
-    "prepare": "husky install",
+  "prepare": "husky install || true",
     "commitlint": "commitlint --from=$GIT_BASE --to=HEAD || true"
   },
   "repository": {
@@ -62,8 +62,7 @@
   },
   "lint-staged": {
     "src/**/*.ts": [
-      "npm run lint:fix",
-      "git add"
+      "npm run lint:fix"
     ]
   }
 }

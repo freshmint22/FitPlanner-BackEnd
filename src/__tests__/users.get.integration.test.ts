@@ -11,9 +11,11 @@ describe('GET /api/users/:id (integration)', () => {
   let mongo: MongoMemoryServer;
 
   beforeAll(async () => {
-    mongo = await MongoMemoryServer.create();
-    const uri = mongo.getUri();
-    await mongoose.connect(uri, { dbName: 'test' });
+    if (mongoose.connection.readyState === 0) {
+      mongo = await MongoMemoryServer.create();
+      const uri = mongo.getUri();
+      await mongoose.connect(uri, { dbName: 'test' });
+    }
   });
 
   beforeEach(async () => {
@@ -21,8 +23,10 @@ describe('GET /api/users/:id (integration)', () => {
   });
 
   afterAll(async () => {
-    await mongoose.disconnect();
-    if (mongo) await mongo.stop();
+    if (mongo) {
+      await mongoose.disconnect();
+      await mongo.stop();
+    }
   });
 
   const base64Url = (input: string) =>

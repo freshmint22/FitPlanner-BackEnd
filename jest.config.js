@@ -4,7 +4,8 @@ module.exports = {
 
   // 👉 Carga variables desde .env.test antes de correr Jest
   setupFiles: ['<rootDir>/jest.setup.js'],
-  setupFilesAfterEnv: ['<rootDir>/test/setup-mongo.js'],
+  // Use our TS setup that seeds the test database
+  setupFilesAfterEnv: ['<rootDir>/src/__tests__/jest.setup.ts'],
 
   collectCoverageFrom: [
     'src/**/*.ts',

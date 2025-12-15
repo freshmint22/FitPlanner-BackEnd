@@ -13,8 +13,10 @@ const genToken = (userId: string) =>
   );
 
 beforeAll(async () => {
-  const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
-  await mongoose.connect(uri!);
+  if (mongoose.connection.readyState === 0) {
+    const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
+    await mongoose.connect(uri!);
+  }
 });
 
 beforeEach(async () => {
@@ -23,8 +25,7 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
+  // global teardown handled by src/__tests__/jest.setup.ts
 });
 
 describe("CONFIGURACIÓN GENERAL DEL SISTEMA", () => {
