@@ -9,9 +9,21 @@ export async function listRoutines(req: Request, res: Response) {
   try {
     const connected = mongoose.connection.readyState === 1;
     if (!connected) return res.json({ items: [], total: 0 });
-
     const items = await RoutineModel.find().lean();
-    const mapped = (items as any[]).map((r: any) => ({ id: r._id?.toString?.() || String(r._id), name: r.name, exercises: r.exercises }));
+
+    const normalize = (r: any) => ({
+      _id: r._id?.toString?.() || String(r._id),
+      name: r.nombre || r.name || `Rutina ${r._id}`,
+      frequency: r.diasPorSemana ? `${r.diasPorSemana} días/semana` : undefined,
+      focus: Array.isArray(r.enfoque) ? r.enfoque.join(', ') : r.enfoque || '',
+      status: r.estado || 'Activa',
+      dias: r.dias || [],
+      objetivo: r.objetivo || '',
+      nivel: r.nivel || '',
+      usuario: r.usuario
+    });
+
+    const mapped = (items as any[]).map(normalize);
     
     // If the request provides an Authorization header, attempt to decode it (optional auth)
     const authHeader = req.headers.authorization;
@@ -27,7 +39,7 @@ export async function listRoutines(req: Request, res: Response) {
     }
     if (memberId) {
       const data = await RoutineModel.find({ usuario: memberId }).lean();
-      return res.json({ ok: true, data });
+      return res.json({ ok: true, data: (data as any[]).map(normalize) });
     }
 
     return res.json({ items: mapped, total: mapped.length });
@@ -39,8 +51,11 @@ export async function listRoutines(req: Request, res: Response) {
 
 export async function createRoutine(req: Request, res: Response) {
   try {
-    const memberId = (req as any).user?.id;
-    if (!memberId) return res.status(401).json({ error: { code: 'unauthorized' } });
+    // allow unauthenticated create when frontend provides memberId in body
+    let memberId = (req as any).user?.id;
+    const bodyMember = req.body?.memberId;
+    if (!memberId && bodyMember) memberId = bodyMember;
+    if (!memberId) return res.status(400).json({ error: { code: 'missing_memberId' } });
 
     const { nombre, diasPorSemana, objetivo, enfoque, nivel } = req.body;
     // Use AI service when requested via body fields
@@ -57,7 +72,20 @@ export async function createRoutine(req: Request, res: Response) {
       estado: 'activa'
     });
 
-    return res.json({ ok: true, data: created });
+    // normalize response shape for frontend convenience
+    const norm: any = {
+      _id: created._id?.toString?.() || String(created._id),
+      name: (created as any).nombre || (created as any).name || `Rutina ${created._id}`,
+      frequency: created.diasPorSemana ? `${created.diasPorSemana} días/semana` : undefined,
+      focus: Array.isArray((created as any).enfoque) ? (created as any).enfoque.join(', ') : (created as any).enfoque || '',
+      status: (created as any).estado || 'Activa',
+      dias: (created as any).dias || [],
+      objetivo: (created as any).objetivo || '',
+      nivel: (created as any).nivel || '',
+      usuario: (created as any).usuario
+    };
+
+    return res.json({ ok: true, data: norm });
   } catch (err) {
     console.error('createRoutine error', err);
     return res.status(500).json({ error: { code: 'server_error' } });
@@ -73,7 +101,19 @@ export async function getRoutine(req: Request, res: Response) {
     const routine = await RoutineModel.findById(id).lean();
     if (!routine) return res.status(404).json({ error: { code: 'not_found' } });
     const r: any = routine as any;
-    return res.json({ id: r._id?.toString?.() || String(r._id), name: r.name, exercises: r.exercises });
+    const normalized = {
+      _id: r._id?.toString?.() || String(r._id),
+      name: r.nombre || r.name || `Rutina ${r._id}`,
+      frequency: r.diasPorSemana ? `${r.diasPorSemana} días/semana` : undefined,
+      focus: Array.isArray(r.enfoque) ? r.enfoque.join(', ') : r.enfoque || '',
+      status: r.estado || 'Activa',
+      dias: r.dias || [],
+      objetivo: r.objetivo || '',
+      nivel: r.nivel || '',
+      usuario: r.usuario,
+      exercises: r.exercises || []
+    };
+    return res.json(normalized);
   } catch (err) {
     console.error('getRoutine error', err);
     return res.status(500).json({ error: { code: 'server_error' } });
@@ -111,11 +151,28 @@ export async function listAssignedRoutines(req: Request, res: Response) {
     if (!memberId) return res.status(401).json({ error: { code: 'unauthorized' } });
     const connected = mongoose.connection.readyState === 1;
     if (!connected) return res.json({ items: [], total: 0 });
-
     const assignments = await RoutineAssignmentModel.find({ memberId }).lean();
+    const normalizeRoutine = (r: any) => ({
+      _id: r._id?.toString?.() || String(r._id),
+      name: r.nombre || r.name || `Rutina ${r._id}`,
+      frequency: r.diasPorSemana ? `${r.diasPorSemana} días/semana` : undefined,
+      focus: Array.isArray(r.enfoque) ? r.enfoque.join(', ') : r.enfoque || '',
+      status: r.estado || 'Activa',
+      dias: r.dias || [],
+      objetivo: r.objetivo || '',
+      nivel: r.nivel || '',
+      usuario: r.usuario
+    });
+
     const mapped = await Promise.all((assignments as any[]).map(async (a: any) => {
       const routine: any = await RoutineModel.findById(a.routineId).lean() as any;
-      return { id: a._id?.toString?.() || String(a._id), routineId: a.routineId, routineName: routine?.name || null, days: a.days || [], exercisesStatus: a.exercisesStatus || [] };
+      return {
+        id: a._id?.toString?.() || String(a._id),
+        routineId: a.routineId,
+        routine: routine ? normalizeRoutine(routine) : null,
+        days: a.days || [],
+        exercisesStatus: a.exercisesStatus || []
+      };
     }));
     return res.json({ items: mapped, total: mapped.length });
   } catch (err) {
@@ -132,7 +189,6 @@ export async function getRoutineExercisesForUser(req: Request, res: Response) {
     if (!memberId) return res.status(401).json({ error: { code: 'unauthorized' } });
     const connected = mongoose.connection.readyState === 1;
     if (!connected) return res.json({ id: routineId, exercises: [] });
-
     const routine = await RoutineModel.findById(routineId).lean();
     if (!routine) return res.status(404).json({ error: { code: 'routine_not_found' } });
 
@@ -143,7 +199,20 @@ export async function getRoutineExercisesForUser(req: Request, res: Response) {
       const status = (assignment as any)?.exercisesStatus?.find((s: any) => s.name === e.name);
       return { name: e.name, sets: e.sets, reps: e.reps, completed: status?.completed || false, completedAt: status?.completedAt || null };
     });
-    return res.json({ id: (routine as any)._id?.toString?.() || String((routine as any)._id), name: (routine as any).name, exercises: exercisesWithStatus });
+
+    const normalized = {
+      _id: (routine as any)._id?.toString?.() || String((routine as any)._id),
+      name: (routine as any).nombre || (routine as any).name || `Rutina ${routine._id}`,
+      frequency: (routine as any).diasPorSemana ? `${(routine as any).diasPorSemana} días/semana` : undefined,
+      focus: Array.isArray((routine as any).enfoque) ? (routine as any).enfoque.join(', ') : (routine as any).enfoque || '',
+      status: (routine as any).estado || 'Activa',
+      dias: (routine as any).dias || [],
+      objetivo: (routine as any).objetivo || '',
+      nivel: (routine as any).nivel || '',
+      usuario: (routine as any).usuario,
+      exercises: exercisesWithStatus
+    };
+    return res.json(normalized);
   } catch (err) {
     console.error('getRoutineExercisesForUser error', err);
     return res.status(500).json({ error: { code: 'server_error' } });
