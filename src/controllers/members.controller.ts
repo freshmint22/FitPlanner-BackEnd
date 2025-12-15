@@ -145,8 +145,33 @@ export const changePassword = async (
 
     return res.json({ message: "Contraseña actualizada exitosamente" });
 
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Error al cambiar contraseña:", err);
+    return res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+/**
+ * Eliminar cuenta (soft delete)
+ */
+export const deleteAccount = async (
+  req: Request & { user?: UserPayload },
+  res: Response
+) => {
+  try {
+    const userId = req.user?.id;
+
+    const user = await Member.findById(userId);
+    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+
+    // Soft delete: marcar como inactivo
+    user.estado = "inactivo";
+    await user.save();
+
+    return res.json({ message: "Cuenta eliminada exitosamente" });
+
+  } catch (err: unknown) {
+    console.error("Error al eliminar cuenta:", err);
     return res.status(500).json({ message: "Error interno del servidor" });
   }
 };

@@ -15,8 +15,10 @@ const genToken = (userId: string) =>
 let token = "";
 
 beforeAll(async () => {
-  const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
-  await mongoose.connect(uri!);
+  if (mongoose.connection.readyState === 0) {
+    const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
+    await mongoose.connect(uri!);
+  }
 
   // Crear admin real
   const admin = await Member.create({
@@ -37,8 +39,7 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
+  // global teardown handled by src/__tests__/jest.setup.ts
 });
 
 describe("GESTIÓN DE PLANES", () => {

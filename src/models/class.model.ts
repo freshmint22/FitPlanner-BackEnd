@@ -1,24 +1,33 @@
-import { Schema, model, Document } from "mongoose";
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IClass extends Document {
-  name: string;
-  instructorName: string;
-  date: Date;
-  capacity: number;
-  room?: string;
+  title?: string;
+  name?: string;
+  description?: string;
+  capacity?: number;
+  schedule?: Date;
+  date?: Date;
+  instructorName?: string;
+  trainerId?: mongoose.Types.ObjectId | string;
+  createdAt?: Date;
 }
 
-const ClassSchema = new Schema<IClass>(
-  {
-    name: { type: String, required: true },
-    instructorName: { type: String, required: true },
-    date: { type: Date, required: true },
-    capacity: { type: Number, required: true },
-    room: { type: String }
-  },
-  {
-    timestamps: true
-  }
-);
+const ClassSchema = new Schema<IClass>({
+  // legacy field: `name` used in many tests/routes
+  name: { type: String },
+  // canonical field for display/title (kept for newer code)
+  title: { type: String, required: function(this: any) { return !this.name; } },
+  description: { type: String },
+  // capacity used by reports and reservations
+  capacity: { type: Number, default: 20 },
+  // legacy date field used by tests/routes
+  date: { type: Date },
+  // canonical schedule field
+  schedule: { type: Date },
+  // legacy instructor name used by reports
+  instructorName: { type: String },
+  trainerId: { type: Schema.Types.ObjectId, ref: 'Member' },
+  createdAt: { type: Date, default: () => new Date() },
+});
 
-export default model<IClass>("Class", ClassSchema);
+export default mongoose.models.Class || mongoose.model<IClass>('Class', ClassSchema);

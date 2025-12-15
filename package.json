@@ -12,7 +12,7 @@
     "test": "jest --runInBand",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
-    "prepare": "husky install",
+  "prepare": "husky install || true",
     "commitlint": "commitlint --from=$GIT_BASE --to=HEAD || true"
   },
   "repository": {
@@ -44,8 +44,8 @@
     "@types/node": "^20.9.0",
     "@types/pdfkit": "^0.17.4",
     "@types/supertest": "^2.0.16",
-    "@typescript-eslint/eslint-plugin": "^6.12.0",
-    "@typescript-eslint/parser": "^6.12.0",
+    "@typescript-eslint/eslint-plugin": "^8.49.0",
+    "@typescript-eslint/parser": "^8.49.0",
     "dotenv": "^17.2.3",
     "eslint": "^8.54.0",
     "eslint-plugin-security": "^1.7.1",
@@ -62,8 +62,7 @@
   },
   "lint-staged": {
     "src/**/*.ts": [
-      "npm run lint:fix",
-      "git add"
+      "npm run lint:fix"
     ]
   }
 }

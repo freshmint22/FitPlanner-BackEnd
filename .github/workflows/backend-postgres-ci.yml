@@ -33,26 +33,22 @@ jobs:
           echo "PWD: $(pwd)"
           echo "Root listing:"
           ls -la
-          echo "Backend listing:"
-          ls -la Backend || true
-          echo "Has Backend/package-lock.json?"
-          if [ -f Backend/package-lock.json ]; then echo "YES"; else echo "NO"; fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: Backend/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        run: npm ci --prefix Backend
+        run: npm ci
 
       - name: Lint code
-        run: npm --prefix Backend run lint
+        run: npm run lint
 
       - name: Run tests
-        run: npm --prefix Backend run test -- --coverage --watchAll=false
+        run: npm run test -- --coverage --watchAll=false
         env:
           CI: true
 
@@ -64,7 +60,7 @@ jobs:
           name: codecov-umbrella
 
       - name: Build project
-        run: npm --prefix Backend run build
+        run: npm run build
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

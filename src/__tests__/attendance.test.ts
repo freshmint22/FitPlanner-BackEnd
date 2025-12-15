@@ -1,6 +1,7 @@
 import request from "supertest";
 import app from "../app";
 import mongoose from "mongoose";
+import { MongoMemoryServer } from 'mongodb-memory-server';
 import Attendance from "../models/attendance.model";
 import Member from "../models/member.model";
 import jwt from "jsonwebtoken";
@@ -12,9 +13,13 @@ const genToken = (userId: string) =>
     process.env.JWT_SECRET || "test-secret"
   );
 
+let mongo: MongoMemoryServer;
 beforeAll(async () => {
-  const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
-  await mongoose.connect(uri!);
+  if (mongoose.connection.readyState === 0) {
+    mongo = await MongoMemoryServer.create();
+    const uri = mongo.getUri();
+    await mongoose.connect(uri);
+  }
 });
 
 beforeEach(async () => {
@@ -23,8 +28,23 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
+  if (mongo) {
+    try {
+      await mongoose.connection.dropDatabase();
+    } catch (e) {
+      // ignore
+    }
+    try {
+      await mongoose.connection.close();
+    } catch (e) {
+      // ignore
+    }
+    try {
+      await mongo.stop();
+    } catch (e) {
+      // ignore
+    }
+  }
 });
 
 describe("GET /api/attendances/list", () => {

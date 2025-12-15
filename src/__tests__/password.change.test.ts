@@ -5,9 +5,15 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+import { MongoMemoryServer } from 'mongodb-memory-server';
+
+let mongo: MongoMemoryServer | undefined;
 beforeAll(async () => {
-  const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
-  await mongoose.connect(uri!);
+  if (mongoose.connection.readyState === 0) {
+    mongo = await MongoMemoryServer.create();
+    const uri = mongo.getUri();
+    await mongoose.connect(uri);
+  }
 });
 
 // ⭐ LIMPIA LOS USUARIOS ENTRE TESTS
@@ -16,8 +22,23 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
+  if (mongo) {
+    try {
+      await mongoose.connection.dropDatabase();
+    } catch (e) {
+      // ignore
+    }
+    try {
+      await mongoose.connection.close();
+    } catch (e) {
+      // ignore
+    }
+    try {
+      await mongo.stop();
+    } catch (e) {
+      // ignore
+    }
+  }
 });
 
 const genToken = (userId: string) => {

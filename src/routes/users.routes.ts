@@ -1,15 +1,17 @@
 import { Router, Request, Response } from "express";
 import Member, { IMember } from "../models/member.model";
+import Membership from "../models/membership.model";
+import Payment from "../models/payment.model";
+import Attendance from "../models/attendance.model";
 import type { FilterQuery } from "mongoose";
 import { requireAuth } from "../middleware/auth";
 import { changePassword } from "../controllers/members.controller";
+import { getProfile } from "../controllers/auth.controller";
 
 const router = Router();
 
-// Endpoint usado en pruebas
-router.get("/profile", (_req, res) => {
-  res.status(200).json({ email: "test@example.com" });
-});
+// Endpoint de perfil con autenticación
+router.get("/profile", requireAuth, getProfile);
 
 // Función para sanear búsquedas regex
 function escapeRegex(input: string) {
@@ -43,6 +45,8 @@ router.get(
 
       if (q) {
         const safe = escapeRegex(q);
+        // `safe` is escaped so using RegExp here is safe; disable the rule for this line.
+        /* eslint-disable-next-line security/detect-non-literal-regexp */
         const re = new RegExp(safe, "i");
         filter.$or = [{ firstName: re }, { lastName: re }, { email: re }];
       }
@@ -65,7 +69,8 @@ router.get(
         createdAt: it.createdAt,
       }));
 
-      return res.json({ items: mapped, total, page, limit });
+      // Return both `data` (used by existing tests) and `items` (newer shape)
+      return res.json({ data: mapped, items: mapped, total, page, limit });
     } catch (err) {
       console.error("GET /users error", err);
       return res
@@ -80,4 +85,75 @@ router.get(
 // ==============================
 router.patch("/password", requireAuth, changePassword);
 
+// ==============================
+// NUEVA RUTA: ELIMINAR CUENTA
+// ==============================
+import { deleteAccount } from "../controllers/members.controller";
+router.delete("/account", requireAuth, deleteAccount);
+
+// GET /users/:id - Obtener perfil de usuario
+router.get(
+  "/:id",
+  requireAuth,
+  async (req: Request & { user?: { id?: string; rol?: string } }, res: Response) => {
+    try {
+      const { id } = req.params;
+
+      // validar formato ObjectId
+      const mongoose = await import('mongoose');
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: { code: 'invalid_id', message: 'Invalid id format' } });
+      }
+
+      // autorización: admin puede ver cualquier perfil; usuario puede ver su propio perfil
+      const requesterId = req.user?.id;
+      const requesterRole = req.user?.rol;
+
+      const member = await Member.findById(id).lean();
+      if (!member) {
+        return res.status(404).json({ error: { code: 'not_found', message: 'User not found' } });
+      }
+
+      if (requesterId !== id && requesterRole !== 'admin') {
+        return res.status(403).json({ error: { code: 'forbidden', message: 'Requires admin role or owner' } });
+      }
+
+      // cargar relaciones recientes (limitadas) para compatibilidad con frontend
+      const [memberships, payments, activity] = await Promise.all([
+        Membership.find({ memberId: member._id }).sort({ startsAt: -1 }).limit(10).lean(),
+        Payment.find({ memberId: member._id }).sort({ createdAt: -1 }).limit(10).lean(),
+        Attendance.find({ memberId: member._id }).sort({ date: -1 }).limit(10).lean(),
+      ]);
+
+      // construir DTO compatible con frontend
+      const membershipsAny: any[] = memberships as any;
+      const paymentsAny: any[] = payments as any;
+      const activityAny: any[] = activity as any;
+
+      const dto = {
+        id: member._id?.toString(),
+        firstName:
+          member.firstName ??
+          (typeof (member as unknown as Record<string, unknown>).nombre === 'string'
+            ? ((member as unknown as Record<string, unknown>).nombre as string)
+            : ''),
+        lastName: member.lastName || '',
+        email: member.email,
+        rol: member.rol,
+        estado: member.estado,
+        createdAt: member.createdAt,
+        memberships: membershipsAny.map((m) => ({ planName: m.planName, startsAt: m.startsAt, endsAt: m.endsAt, active: m.active })),
+        payments: paymentsAny.map((p) => ({ amount: p.amount, currency: p.currency, status: p.status, createdAt: p.createdAt })),
+        activity: activityAny.map((a) => ({ date: a.date, classId: a.classId })),
+      } as const;
+
+      return res.json({ item: dto });
+    } catch (err) {
+      console.error('GET /users/:id error', err);
+      return res.status(500).json({ error: { code: 'server_error', message: 'Internal error' } });
+    }
+  }
+);
+
 export default router;
+

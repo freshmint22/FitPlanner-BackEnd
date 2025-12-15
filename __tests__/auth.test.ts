@@ -14,6 +14,14 @@ describe('Auth Endpoints', () => {
   });
 
   it('should login a user', async () => {
+    // Ensure the user exists (tests reset DB between cases)
+    await request(app)
+      .post('/auth/register')
+      .send({
+        email: 'test@example.com',
+        password: 'password123',
+      });
+
     const response = await request(app)
       .post('/auth/login')
       .send({

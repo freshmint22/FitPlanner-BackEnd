@@ -1,58 +1,59 @@
-import { Schema, model, Document, Types } from "mongoose";
+import mongoose, { Document, Schema } from 'mongoose';
 
-export interface IRoutine extends Document {
-  usuario: Types.ObjectId;
-  nombre: string;
-  diasPorSemana: number;
-  objetivo: string;
-  enfoque: string[];
-  nivel: string;
-  dias: any[];
-  estado: "activa" | "borrador";
-  createdAt: Date;
-  updatedAt: Date;
+export interface IExercise {
+  name: string;
+  sets?: number;
+  reps?: number;
 }
 
-const RoutineSchema = new Schema(
+export interface IRoutine extends Document {
+  name?: string;
+  nombre?: string;
+  usuario?: mongoose.Types.ObjectId | string;
+  trainerId?: mongoose.Types.ObjectId | string;
+  diasPorSemana?: number;
+  objetivo?: string;
+  enfoque?: string[];
+  nivel?: string;
+  dias?: Array<{ dia: number; ejercicios: any[] }>;
+  estado?: string;
+  exercises?: IExercise[];
+  createdAt?: Date;
+}
+
+const ExerciseSchema = new Schema<IExercise>({
+  name: { type: String, required: true },
+  sets: { type: Number },
+  reps: { type: Number },
+});
+
+const RoutineSchema = new Schema<IRoutine>(
   {
-    usuario: {
-      type: Schema.Types.ObjectId,
-      ref: "Member",
-      required: true
-    },
-    nombre: {
-      type: String,
-      required: true
-    },
-    diasPorSemana: {
-      type: Number,
-      required: true
-    },
-    objetivo: {
-      type: String,
-      required: true
-    },
-    enfoque: {
-      type: [String],
-      default: []
-    },
-    nivel: {
-      type: String,
-      required: true
-    },
-    dias: {
-      type: Schema.Types.Mixed,
-      default: []
-    },
-    estado: {
-      type: String,
-      enum: ["activa", "borrador"],
-      default: "activa"
-    }
+    // keep both english and spanish fields for compatibility
+    name: { type: String },
+    nombre: { type: String },
+    usuario: { type: Schema.Types.ObjectId, ref: 'Member' },
+    diasPorSemana: { type: Number },
+    objetivo: { type: String },
+    enfoque: { type: [String], default: [] },
+    nivel: { type: String },
+    dias: { type: [{ dia: Number, ejercicios: Array }], default: [] },
+    estado: { type: String, default: 'activa' },
+    trainerId: { type: Schema.Types.ObjectId, ref: 'Member' },
+    exercises: { type: [ExerciseSchema], default: [] },
+    createdAt: { type: Date, default: () => new Date() },
   },
-  {
-    timestamps: true
-  }
+  { timestamps: true }
 );
 
-export default model<IRoutine>("Routine", RoutineSchema);
+// Ensure `name` mirrors `nombre` for code expecting English field
+RoutineSchema.virtual('nameAlias')
+  .get(function (this: any) {
+    return this.name || this.nombre;
+  })
+  .set(function (this: any, v: any) {
+    this.name = v;
+    this.nombre = v;
+  });
+
+export default mongoose.models.Routine || mongoose.model<IRoutine>('Routine', RoutineSchema);
