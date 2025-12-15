@@ -54,6 +54,10 @@ app.use('/classes', classesRouter);
 app.use('/routines', routinesRouter2);
 
 app.use("/auth", authRouter);
+// Also mount under /api/auth so requests to /auth (rewritten or direct)
+// and /api/auth are both handled. This ensures legacy frontend calls
+// and the newer `/api`-prefixed calls work in production.
+app.use("/api/auth", authRouter);
 
 app.use("/api/attendances", attendanceRoutes);
 // Legacy frontend may call /attendances without the /api prefix — support both
