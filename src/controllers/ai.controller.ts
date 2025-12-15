@@ -1,4 +1,21 @@
 import { Request, Response } from 'express';
+import { generateRoutineWithAI } from '../services/openai.service';
+
+export async function createRoutineAI(req: Request, res: Response) {
+  try {
+    const { objective, level, daysPerWeek, focus, restrictions } = req.body;
+    const prompt = `Genera una rutina de entrenamiento. Objetivo: ${objective || 'No especificado'}. Nivel: ${level || 'No especificado'}. Días/semana: ${daysPerWeek || '3'}. Enfoque: ${focus || 'General'}. Restricciones: ${restrictions || 'ninguna'}. Entrega: título, lista de días con ejercicios y repeticiones. Breve explicación.`;
+
+    const aiText = await generateRoutineWithAI(prompt);
+    return res.json({ routineText: aiText });
+  } catch (err: any) {
+    console.error('AI routine error:', err?.message || err);
+    return res.status(500).json({ error: err?.message || 'Error generating routine' });
+  }
+}
+
+export default createRoutineAI;
+import { Request, Response } from 'express';
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
 
