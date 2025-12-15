@@ -6,13 +6,12 @@ import Attendance from "../models/attendance.model";
 import type { FilterQuery } from "mongoose";
 import { requireAuth } from "../middleware/auth";
 import { changePassword } from "../controllers/members.controller";
+import { getProfile } from "../controllers/auth.controller";
 
 const router = Router();
 
-// Endpoint usado en pruebas
-router.get("/profile", (_req, res) => {
-  res.status(200).json({ email: "test@example.com" });
-});
+// Endpoint de perfil con autenticación
+router.get("/profile", requireAuth, getProfile);
 
 // Función para sanear búsquedas regex
 function escapeRegex(input: string) {
@@ -70,7 +69,8 @@ router.get(
         createdAt: it.createdAt,
       }));
 
-      return res.json({ items: mapped, total, page, limit });
+      // Return both `data` (used by existing tests) and `items` (newer shape)
+      return res.json({ data: mapped, items: mapped, total, page, limit });
     } catch (err) {
       console.error("GET /users error", err);
       return res
@@ -84,6 +84,12 @@ router.get(
 // NUEVA RUTA: CAMBIAR CONTRASEÑA
 // ==============================
 router.patch("/password", requireAuth, changePassword);
+
+// ==============================
+// NUEVA RUTA: ELIMINAR CUENTA
+// ==============================
+import { deleteAccount } from "../controllers/members.controller";
+router.delete("/account", requireAuth, deleteAccount);
 
 // GET /users/:id - Obtener perfil de usuario
 router.get(
@@ -120,6 +126,10 @@ router.get(
       ]);
 
       // construir DTO compatible con frontend
+      const membershipsAny: any[] = memberships as any;
+      const paymentsAny: any[] = payments as any;
+      const activityAny: any[] = activity as any;
+
       const dto = {
         id: member._id?.toString(),
         firstName:
@@ -132,9 +142,9 @@ router.get(
         rol: member.rol,
         estado: member.estado,
         createdAt: member.createdAt,
-        memberships: memberships.map((m) => ({ planName: m.planName, startsAt: m.startsAt, endsAt: m.endsAt, active: m.active })),
-        payments: payments.map((p) => ({ amount: p.amount, currency: p.currency, status: p.status, createdAt: p.createdAt })),
-        activity: activity.map((a) => ({ date: a.date, classId: a.classId })),
+        memberships: membershipsAny.map((m) => ({ planName: m.planName, startsAt: m.startsAt, endsAt: m.endsAt, active: m.active })),
+        payments: paymentsAny.map((p) => ({ amount: p.amount, currency: p.currency, status: p.status, createdAt: p.createdAt })),
+        activity: activityAny.map((a) => ({ date: a.date, classId: a.classId })),
       } as const;
 
       return res.json({ item: dto });

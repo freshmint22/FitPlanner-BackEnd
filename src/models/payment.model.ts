@@ -16,13 +16,5 @@ const PaymentSchema = new Schema<PaymentDocument>(
   },
   { timestamps: true }
 );
-
-<<<<<<< HEAD
-PaymentSchema.index({ memberId: 1, createdAt: -1 });
-
-const Payment = model<IPayment>('Payment', PaymentSchema);
-
-export default Payment;
-=======
+ 
 export default model<PaymentDocument>("Payment", PaymentSchema);
->>>>>>> origin/LVAL

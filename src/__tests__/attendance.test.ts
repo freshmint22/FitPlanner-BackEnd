@@ -15,9 +15,11 @@ const genToken = (userId: string) =>
 
 let mongo: MongoMemoryServer;
 beforeAll(async () => {
-  mongo = await MongoMemoryServer.create();
-  const uri = mongo.getUri();
-  await mongoose.connect(uri);
+  if (mongoose.connection.readyState === 0) {
+    mongo = await MongoMemoryServer.create();
+    const uri = mongo.getUri();
+    await mongoose.connect(uri);
+  }
 });
 
 beforeEach(async () => {
@@ -26,9 +28,23 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  if (mongo) await mongo.stop();
+  if (mongo) {
+    try {
+      await mongoose.connection.dropDatabase();
+    } catch (e) {
+      // ignore
+    }
+    try {
+      await mongoose.connection.close();
+    } catch (e) {
+      // ignore
+    }
+    try {
+      await mongo.stop();
+    } catch (e) {
+      // ignore
+    }
+  }
 });
 
 describe("GET /api/attendances/list", () => {

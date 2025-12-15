@@ -1,15 +1,11 @@
 import { Router } from 'express';
+import { register, login, forgotPassword, resetPassword } from '../controllers/auth.controller';
 
 const router = Router();
 
-router.post('/register', (_req, res) => {
-  // Minimal mock: pretend registration succeeded and return a token
-  res.status(201).json({ token: 'fake-jwt-token' });
-});
-
-router.post('/login', (_req, res) => {
-  // Minimal mock: pretend login succeeded and return a token
-  res.status(200).json({ token: 'fake-jwt-token' });
-});
+router.post('/register', register);
+router.post('/login', login);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 
 export default router;

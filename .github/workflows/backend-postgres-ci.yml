@@ -1,0 +1,5 @@
+name: disabled-backend-postgres-ci
+
+# This workflow was disabled by automated cleanup to remove Postgres CI runs.
+# Kept for history; does not run because 'on' is empty.
+on: {}

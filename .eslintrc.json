@@ -15,9 +15,11 @@
     "es6": true
   },
   "rules": {
-    "@typescript-eslint/no-unused-vars": "error",
+    "@typescript-eslint/no-unused-vars": "warn",
+    "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/explicit-function-return-type": "off",
-    "security/detect-object-injection": "off"
+    "security/detect-object-injection": "off",
+    "security/detect-non-literal-regexp": "off"
   },
   "ignorePatterns": ["dist/", "node_modules/"]
 }

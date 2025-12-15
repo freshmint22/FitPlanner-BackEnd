@@ -20,9 +20,12 @@ export interface IMember extends Document {
     endDate: Date;
   };
 
-  // 🔥 AGREGADOS PARA PLANES
   planActual?: string | null;
   fechaCambioPlan?: Date;
+
+  // 🔐 RECUPERAR CONTRASEÑA
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
 
   createdAt: Date;
   updatedAt: Date;
@@ -30,8 +33,8 @@ export interface IMember extends Document {
 
 const MemberSchema = new Schema<IMember>(
   {
-    firstName: { type: String, trim: true, required: false },
-    lastName: { type: String, trim: true, required: false },
+    firstName: { type: String, trim: true },
+    lastName: { type: String, trim: true },
 
     email: {
       type: String,
@@ -43,7 +46,6 @@ const MemberSchema = new Schema<IMember>(
 
     password: { type: String, required: true },
     phone: { type: String, trim: true },
-
     birthDate: { type: Date },
 
     gender: {
@@ -55,32 +57,27 @@ const MemberSchema = new Schema<IMember>(
     profileImage: { type: String },
 
     rol: { type: String, default: "user" },
-
     estado: { type: String, default: "activo" },
 
     membership: {
       type: {
-        name: { type: String },
-        price: { type: Number },
-        duration: { type: Number },
-        startDate: { type: Date },
-        endDate: { type: Date }
-      },
-      required: false
+        name: String,
+        price: Number,
+        duration: Number,
+        startDate: Date,
+        endDate: Date
+      }
     },
 
-    // 🔥 CAMPOS NUEVOS PARA MANEJO DE PLANES
-    planActual: {
-      type: String,
-      default: null
-    },
-    fechaCambioPlan: {
-      type: Date
-    }
+    planActual: { type: String, default: null },
+    fechaCambioPlan: { type: Date },
+
+    // 🔐 RESET
+    resetPasswordToken: String,
+    resetPasswordExpires: Date
   },
   { timestamps: true }
 );
 
 const Member = model<IMember>("Member", MemberSchema);
-
 export default Member;

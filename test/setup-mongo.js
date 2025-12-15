@@ -1,21 +1,36 @@
-const { MongoMemoryServer } = require('mongodb-memory-server');
+const mongoose = require('mongoose');
 
-let mongod;
-
-// Start an in-memory MongoDB before the test suite and set the env var
+// Use the real MONGODB_URI from .env.test (loaded by jest.setup.js).
+// Connect before tests and ensure DB is clean between tests.
 beforeAll(async () => {
-  mongod = await MongoMemoryServer.create();
-  process.env.MONGODB_URI = mongod.getUri();
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error('MONGODB_URI not set in environment; ensure .env.test is present');
+  }
+  // Use a short timeout for CI responsiveness
+  await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
 });
 
-// Stop the in-memory server after all tests in the file complete.
-// Do NOT disconnect mongoose here — test files manage their own connections.
-afterAll(async () => {
-  if (mongod) {
+// Clear all collections between tests to keep isolation
+beforeEach(async () => {
+  const collections = Object.keys(mongoose.connection.collections);
+  for (const name of collections) {
+    const coll = mongoose.connection.collections[name];
     try {
-      await mongod.stop();
+      await coll.deleteMany({});
     } catch (e) {
-      // ignore stop errors
+      // ignore errors for system collections
     }
+  }
+});
+
+afterAll(async () => {
+  try {
+    // Optionally drop the test database to leave a clean state
+    if (mongoose.connection.db) {
+      try { await mongoose.connection.db.dropDatabase(); } catch (e) { /* ignore */ }
+    }
+  } finally {
+    await mongoose.connection.close();
   }
 });
