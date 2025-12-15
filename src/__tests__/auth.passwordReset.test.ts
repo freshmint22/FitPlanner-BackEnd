@@ -4,18 +4,8 @@ import mongoose from "mongoose";
 import Member from "../models/member.model";
 import bcrypt from "bcryptjs";
 
-beforeAll(async () => {
-  const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
-  await mongoose.connect(uri!);
-});
-
 beforeEach(async () => {
   await Member.deleteMany({});
-});
-
-afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
 });
 
 describe("AUTH – Recuperación de contraseña", () => {
