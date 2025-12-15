@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 import RoutineModel from '../models/routine.model';
 import RoutineAssignmentModel from '../models/routineAssignment.model';
 import mongoose from 'mongoose';
+import { generarRutinaIA } from '../services/routineAI.service';
 
 export async function listRoutines(req: Request, res: Response) {
   try {
@@ -10,9 +12,54 @@ export async function listRoutines(req: Request, res: Response) {
 
     const items = await RoutineModel.find().lean();
     const mapped = (items as any[]).map((r: any) => ({ id: r._id?.toString?.() || String(r._id), name: r.name, exercises: r.exercises }));
+    
+    // If the request provides an Authorization header, attempt to decode it (optional auth)
+    const authHeader = req.headers.authorization;
+    let memberId = (req as any).user?.id;
+    if (!memberId && authHeader) {
+      try {
+        const token = authHeader.replace('Bearer ', '');
+        const payload: any = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret');
+        memberId = payload?.id;
+      } catch {
+        memberId = undefined;
+      }
+    }
+    if (memberId) {
+      const data = await RoutineModel.find({ usuario: memberId }).lean();
+      return res.json({ ok: true, data });
+    }
+
     return res.json({ items: mapped, total: mapped.length });
   } catch (err) {
     console.error('listRoutines error', err);
+    return res.status(500).json({ error: { code: 'server_error' } });
+  }
+}
+
+export async function createRoutine(req: Request, res: Response) {
+  try {
+    const memberId = (req as any).user?.id;
+    if (!memberId) return res.status(401).json({ error: { code: 'unauthorized' } });
+
+    const { nombre, diasPorSemana, objetivo, enfoque, nivel } = req.body;
+    // Use AI service when requested via body fields
+    const aiResult = await generarRutinaIA({ diasPorSemana: diasPorSemana || 3, objetivo: objetivo || '', enfoque: enfoque || [], nivel: nivel || 'basico' });
+
+    const created = await RoutineModel.create({
+      usuario: memberId,
+      nombre,
+      diasPorSemana,
+      objetivo,
+      enfoque,
+      nivel,
+      dias: aiResult.dias,
+      estado: 'activa'
+    });
+
+    return res.json({ ok: true, data: created });
+  } catch (err) {
+    console.error('createRoutine error', err);
     return res.status(500).json({ error: { code: 'server_error' } });
   }
 }

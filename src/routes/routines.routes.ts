@@ -1,17 +1,22 @@
 import { Router } from 'express';
-import { listRoutines, getRoutine, assignRoutine, listAssignedRoutines, getRoutineExercisesForUser, markExerciseCompleted } from '../controllers/routines.controller';
+import { listRoutines, getRoutine, assignRoutine, listAssignedRoutines, getRoutineExercisesForUser, markExerciseCompleted, createRoutine } from '../controllers/routines.controller';
 import { requireAuth } from '../middleware/auth';
 
 const router = Router();
 
-router.get('/', listRoutines);
-router.get('/:id', requireAuth, getRoutine);
+// Create routine (AI)
+router.post('/', requireAuth, createRoutine);
 
-// Assign a routine to a member (admin/trainer)
-router.post('/:id/assign', requireAuth, assignRoutine);
-
-// User endpoints
+// User endpoints (static routes before param)
 router.get('/assigned/me', requireAuth, listAssignedRoutines);
 router.get('/:id/exercises', requireAuth, getRoutineExercisesForUser);
 router.put('/:id/exercises/:idx/complete', requireAuth, markExerciseCompleted);
+
+// Public list
+router.get('/', listRoutines);
+
+// Routine by id and assign
+router.get('/:id', requireAuth, getRoutine);
+router.post('/:id/assign', requireAuth, assignRoutine);
+
 export default router;
