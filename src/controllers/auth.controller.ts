@@ -57,6 +57,7 @@ export const register = async (req: Request, res: Response) => {
 
     return res.status(201).json({
       accessToken: token,
+      token,
       user: {
         id: newMember._id,
         name: `${newMember.firstName || ''} ${newMember.lastName || ''}`.trim() || newMember.email,
@@ -108,6 +109,7 @@ export const login = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       accessToken: token,
+      token,
       user: {
         id: member._id,
         name: `${member.firstName || ''} ${member.lastName || ''}`.trim() || member.email,
