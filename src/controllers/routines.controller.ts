@@ -63,6 +63,7 @@ export async function createRoutine(req: Request, res: Response) {
     return res.status(500).json({ error: { code: 'server_error' } });
   }
 }
+
 export async function getRoutine(req: Request, res: Response) {
   try {
     const { id } = req.params;

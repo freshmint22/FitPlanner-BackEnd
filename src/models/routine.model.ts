@@ -55,5 +55,6 @@ RoutineSchema.virtual('nameAlias')
     this.name = v;
     this.nombre = v;
   });
+// (kept Spanish/English-compatible schema above)
 
 export default mongoose.models.Routine || mongoose.model<IRoutine>('Routine', RoutineSchema);

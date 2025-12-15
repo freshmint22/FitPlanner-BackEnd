@@ -1,4 +1,4 @@
-﻿import { Router } from 'express';
+import { Router } from 'express';
 import { listRoutines, getRoutine, assignRoutine, listAssignedRoutines, getRoutineExercisesForUser, markExerciseCompleted, createRoutine } from '../controllers/routines.controller';
 import { requireAuth } from '../middleware/auth';
 
