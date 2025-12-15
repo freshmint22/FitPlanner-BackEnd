@@ -14,6 +14,7 @@ import paymentsRoutes from "./routes/payments.routes";
 import notificationsRoutes from "./routes/notifications.routes";
 import gymInfoRoutes from "./routes/gymInfo.routes";
 import plansRoutes from "./routes/plans.routes";
+import aiRoutes from './routes/ai.routes';
 import { errorHandler } from "./middleware/errorHandler";
 import generalConfigRoutes from "./routes/generalConfig.routes";
 
@@ -73,6 +74,9 @@ app.use("/", notificationsRoutes);
 app.use("/", gymInfoRoutes);
 
 app.use("/planes", plansRoutes);
+
+// AI routines endpoint (server-side uses OPENAI_API_KEY)
+app.use('/api/ai', aiRoutes);
 
 app.use("/configuracion/general", generalConfigRoutes);
 
