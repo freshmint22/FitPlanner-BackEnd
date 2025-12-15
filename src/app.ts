@@ -23,11 +23,7 @@ const app = express();
 
 // Configure CORS to allow credentials and a restricted origin list.
 // BACKEND_CORS_ORIGIN can be a single URL or comma-separated URLs.
-// Include the deployed frontend origin by default so Vercel deployments
-// can call the backend without requiring an immediate env change in Render.
-// This is a temporary safety measure; prefer updating `BACKEND_CORS_ORIGIN`
-// in Render's environment variables to list allowed origins explicitly.
-const allowedOrigins = (process.env.BACKEND_CORS_ORIGIN || 'http://localhost:5173,https://fit-planner-front-end-git-main-freshmint22s-projects.vercel.app')
+const allowedOrigins = (process.env.BACKEND_CORS_ORIGIN || 'http://localhost:5173')
 	.split(',')
 	.map((o) => o.trim())
 	.filter(Boolean);
