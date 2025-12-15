@@ -13,7 +13,7 @@ import NotificationConfig from '../models/notificationConfig.model';
 import RoutineAssignment from '../models/routineAssignment.model';
 
 // Increase default jest timeout for slow CI environments
-jest.setTimeout(30000);
+jest.setTimeout(120000);
 
 // Allow non-strict queries (helps some mongoose versions in tests)
 mongoose.set('strictQuery', false);

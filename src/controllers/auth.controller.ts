@@ -9,8 +9,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 export const register = async (req: Request, res: Response) => {
   try {
     const { firstName, lastName, email, password, role } = req.body;
-    const emailLower = (email || '').toLowerCase();
-    const normalizedEmail = emailLower.replace(/\(\.gym\)/g, '');
+    const emailRaw = (email || '').toString();
+    const emailLower = emailRaw.toLowerCase().trim();
+    const normalizedEmail = emailLower.replace(/\(\.gym\)/g, '').normalize('NFKC').trim();
 
     // Validate required fields / Validar campos requeridos
     if (!email || !password) {
@@ -19,8 +20,8 @@ export const register = async (req: Request, res: Response) => {
       });
     }
 
-    // Verificar si el email ya existe
-    const existingMember = await Member.findOne({ email: email.toLowerCase() });
+    // Verificar si el email ya existe (usar la misma normalización que al guardar)
+    const existingMember = await Member.findOne({ email: normalizedEmail });
     if (existingMember) {
       return res.status(409).json({
         error: { code: 'email_exists', message: 'Email already registered' }

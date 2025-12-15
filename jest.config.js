@@ -14,5 +14,9 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
 
+  // Increase default test timeout to allow teardown of in-memory MongoDB
+  testTimeout: 120000,
+
   testMatch: ['**/__tests__/**/*.test.ts', '**/?(*.)+(spec|test).ts'],
 };
+

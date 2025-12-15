@@ -8,6 +8,7 @@ import authRouter from "./routes/auth.routes";
 import classesRouter from "./routes/classes.routes";
 import routinesRouter2 from "./routes/routines.routes";
 import attendanceRoutes from "./routes/attendances.routes";
+import apiPrefixRewrite from './middleware/apiPrefixRewrite';
 import reportsRoutes from "./routes/reports.routes";
 import paymentsRoutes from "./routes/payments.routes";
 import notificationsRoutes from "./routes/notifications.routes";
@@ -39,6 +40,8 @@ app.use(
 );
 app.use(express.json());
 
+// Rewrite legacy requests that call API routes without the `/api` prefix.
+app.use(apiPrefixRewrite);
 
 
 app.use("/members", membersRouter);
@@ -53,6 +56,8 @@ app.use('/routines', routinesRouter2);
 app.use("/auth", authRouter);
 
 app.use("/api/attendances", attendanceRoutes);
+// Legacy frontend may call /attendances without the /api prefix — support both
+app.use("/attendances", attendanceRoutes);
 
 app.use("/reportes", reportsRoutes);
 app.use("/pagos", paymentsRoutes);

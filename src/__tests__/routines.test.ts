@@ -19,19 +19,9 @@ const genToken = (userId: string) => {
 // ---------------------------
 // SETUP / TEARDOWN
 // ---------------------------
-beforeAll(async () => {
-  const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
-  await mongoose.connect(uri!);
-});
-
 beforeEach(async () => {
   await Member.deleteMany({});
   await Routine.deleteMany({});
-});
-
-afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
 });
 
 // ---------------------------
