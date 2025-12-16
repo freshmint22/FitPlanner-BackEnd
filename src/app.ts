@@ -23,7 +23,8 @@ const app = express();
 
 // Configure CORS to allow credentials and a restricted origin list.
 // BACKEND_CORS_ORIGIN can be a single URL or comma-separated URLs.
-const allowedOrigins = (process.env.BACKEND_CORS_ORIGIN || 'http://localhost:5173')
+// Allow both common dev frontend origins by default (Vite uses 5173/5174)
+const allowedOrigins = (process.env.BACKEND_CORS_ORIGIN || 'http://localhost:5173,http://localhost:5174')
 	.split(',')
 	.map((o) => o.trim())
 	.filter(Boolean);
@@ -52,7 +53,12 @@ app.use("/routines", routinesRouter);
 app.use("/users", usersRouter);
 app.use("/api/users", usersRouter);
 app.use('/classes', classesRouter);
+// Also mount classes under the /api prefix so frontend requests to /api/classes are handled
+app.use('/api/classes', classesRouter);
+// Also mount classes under /api so frontend calls to /api/classes succeed
+app.use('/api/classes', classesRouter);
 app.use('/routines', routinesRouter2);
+app.use('/api/routines', routinesRouter2);
 
 app.use("/auth", authRouter);
 // Also mount under /api/auth so requests to /auth (rewritten or direct)
@@ -66,6 +72,8 @@ app.use("/attendances", attendanceRoutes);
 
 app.use("/reportes", reportsRoutes);
 app.use("/pagos", paymentsRoutes);
+// Also mount payments under the /api prefix so frontend calls to /api/pagos succeed
+app.use("/api/pagos", paymentsRoutes);
 
 app.use("/notifications", notificationsRoutes);
 // Mount notifications routes at root so legacy paths like
@@ -74,6 +82,10 @@ app.use("/", notificationsRoutes);
 app.use("/", gymInfoRoutes);
 
 app.use("/planes", plansRoutes);
+// Mount plans under both Spanish and English API paths to support frontend and legacy callers
+app.use("/api/planes", plansRoutes);
+app.use("/api/plans", plansRoutes);
+app.use("/plans", plansRoutes);
 
 // AI routines endpoint (server-side uses OPENAI_API_KEY)
 app.use('/api/ai', aiRoutes);
