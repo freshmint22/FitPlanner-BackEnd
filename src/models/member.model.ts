@@ -65,7 +65,8 @@ const MemberSchema = new Schema<IMember>(
         price: Number,
         duration: Number,
         startDate: Date,
-        endDate: Date
+        endDate: Date,
+        paymentMethod: String
       }
     },
 

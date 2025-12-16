@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listRoutines, getRoutine, assignRoutine, listAssignedRoutines, getRoutineExercisesForUser, markExerciseCompleted, createRoutine } from '../controllers/routines.controller';
+import { listRoutines, getRoutine, assignRoutine, listAssignedRoutines, getRoutineExercisesForUser, markExerciseCompleted, createRoutine, deleteRoutine, refreshRoutineAI } from '../controllers/routines.controller';
 import { requireAuth } from '../middleware/auth';
 
 const router = Router();
@@ -18,5 +18,8 @@ router.get('/', listRoutines);
 // Routine by id and assign
 router.get('/:id', requireAuth, getRoutine);
 router.post('/:id/assign', requireAuth, assignRoutine);
+// Delete a routine (owner or admin)
+router.delete('/:id', requireAuth, deleteRoutine);
+router.post('/:id/refresh-ai', requireAuth, refreshRoutineAI);
 
 export default router;

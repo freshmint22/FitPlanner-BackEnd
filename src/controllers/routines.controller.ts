@@ -5,6 +5,38 @@ import RoutineAssignmentModel from '../models/routineAssignment.model';
 import mongoose from 'mongoose';
 import { generarRutinaIA } from '../services/routineAI.service';
 
+// Delete a routine (only owner or admin)
+export async function deleteRoutine(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const memberId = (req as any).user?.id;
+    const userRole = (req as any).user?.rol;
+
+    if (!memberId) return res.status(401).json({ error: { code: 'unauthorized' } });
+
+    const connected = mongoose.connection.readyState === 1;
+    if (!connected) return res.status(200).json({ ok: true });
+
+    const routine: any = await RoutineModel.findById(id).lean();
+    if (!routine) return res.status(404).json({ error: { code: 'not_found' } });
+
+    // Allow delete if user is admin or owner of the routine
+    const isOwner = routine.usuario && String(routine.usuario) === String(memberId);
+    if (!isOwner && userRole !== 'admin') {
+      return res.status(403).json({ error: { code: 'forbidden' } });
+    }
+
+    // Delete routine and any assignments referencing it
+    await RoutineModel.findByIdAndDelete(id);
+    await RoutineAssignmentModel.deleteMany({ routineId: id });
+
+    return res.json({ ok: true, id });
+  } catch (err) {
+    console.error('deleteRoutine error', err);
+    return res.status(500).json({ error: { code: 'server_error' } });
+  }
+}
+
 export async function listRoutines(req: Request, res: Response) {
   try {
     const connected = mongoose.connection.readyState === 1;
@@ -88,6 +120,42 @@ export async function createRoutine(req: Request, res: Response) {
     return res.json({ ok: true, data: norm });
   } catch (err) {
     console.error('createRoutine error', err);
+    return res.status(500).json({ error: { code: 'server_error' } });
+  }
+}
+
+// Refresh exercises for an existing routine using the AI generator
+export async function refreshRoutineAI(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const memberId = (req as any).user?.id;
+    if (!memberId) return res.status(401).json({ error: { code: 'unauthorized' } });
+
+    const routine = await RoutineModel.findById(id);
+    if (!routine) return res.status(404).json({ error: { code: 'not_found' } });
+
+    // Only owner or admin can refresh
+    const userRole = (req as any).user?.rol;
+    const isOwner = routine.usuario && String(routine.usuario) === String(memberId);
+    if (!isOwner && userRole !== 'admin') return res.status(403).json({ error: { code: 'forbidden' } });
+
+    // Prepare AI params from routine
+    const params = {
+      diasPorSemana: (routine as any).diasPorSemana || ((routine as any).dias ? (routine as any).dias.length : 3),
+      objetivo: (routine as any).objetivo || '',
+      enfoque: Array.isArray((routine as any).enfoque) ? (routine as any).enfoque : ((routine as any).focus ? String((routine as any).focus).split(',').map((s: string) => s.trim()) : []),
+      nivel: (routine as any).nivel || ''
+    };
+
+    const aiResult = await generarRutinaIA(params as any);
+    // aiResult.dias is normalized by the service
+    routine.dias = aiResult.dias;
+    (routine as any).generatedText = aiResult.generatedText;
+    await routine.save();
+
+    return res.json({ ok: true, data: routine.toObject() });
+  } catch (err) {
+    console.error('refreshRoutineAI error', err);
     return res.status(500).json({ error: { code: 'server_error' } });
   }
 }
