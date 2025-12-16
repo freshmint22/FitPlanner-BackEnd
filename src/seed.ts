@@ -1,5 +1,7 @@
 import { connectDB, disconnectDB } from './db';
 import Member from './models/member.model';
+import ClassModel from './models/class.model';
+import ReservationModel from './models/reservation.model';
 
 async function seed() {
   try {
@@ -51,6 +53,45 @@ async function seed() {
       console.log(`Seeded ${seedCount} users (including ${base.length} base users)`);
     } else {
       console.log('Seeded base users');
+    }
+
+    // Seed demo classes
+    const classesToSeed = [
+      { title: 'CrossFit', capacity: 20 },
+      { title: 'Spinning', capacity: 18 },
+      { title: 'Funcional', capacity: 16 },
+      { title: 'Yoga', capacity: 12 },
+    ];
+
+    const classIds: Array<{ id: string; title: string }> = [];
+    for (const c of classesToSeed) {
+      const created = await ClassModel.findOneAndUpdate(
+        { title: c.title },
+        { $setOnInsert: { title: c.title, capacity: c.capacity } },
+        { new: true, upsert: true }
+      ).lean() as any;
+      if (created?._id) classIds.push({ id: created._id.toString(), title: c.title });
+    }
+
+    // Seed some reservations per class only if none exist yet
+    const reservationPlan: Record<string, number> = {
+      CrossFit: 14,
+      Spinning: 9,
+      Funcional: 6,
+      Yoga: 4,
+    };
+
+    for (const { id, title } of classIds) {
+      const existing = await ReservationModel.countDocuments({ classId: id });
+      if (existing === 0) {
+        const count = reservationPlan[title] ?? 0;
+        const docs = Array.from({ length: count }).map((_, i) => ({
+          memberId: `seed-user-${i + 1}`,
+          classId: id,
+          status: 'booked' as const,
+        }));
+        if (docs.length) await ReservationModel.insertMany(docs);
+      }
     }
 
     console.log('Seeding completed');

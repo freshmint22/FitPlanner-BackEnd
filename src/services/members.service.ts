@@ -1,5 +1,6 @@
 import Member from "../models/member.model";
 import { createSimulatedPayment } from "./payments.service";
+import bcrypt from "bcryptjs";
 
 /**
  * Listar miembros con paginación y búsqueda
@@ -29,9 +30,19 @@ export const listMembers = async (page: number, limit: number, q?: string) => {
  * Crear miembro
  */
 export const createMember = async (memberData: any) => {
+  // Hash password if provided
+  if (memberData.password) {
+    const salt = await bcrypt.genSalt(10);
+    memberData.password = await bcrypt.hash(memberData.password, salt);
+  }
+
   const newMember = new Member(memberData);
   await newMember.save();
-  return newMember;
+  
+  // Remove password from response
+  const memberResponse: any = newMember.toObject();
+  delete memberResponse.password;
+  return memberResponse;
 };
 
 /**
