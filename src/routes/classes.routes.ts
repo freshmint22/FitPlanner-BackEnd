@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listClasses, createReservation, createClass, getReservationsByClass, listUpcomingClasses, getClassById, updateClass, deleteClass, getMyReservations } from '../controllers/classes.controller';
+import { listClasses, createReservation, cancelReservation, createClass, getReservationsByClass, listUpcomingClasses, getClassById, updateClass, deleteClass, getMyReservations } from '../controllers/classes.controller';
 import { requireAuth, isAdmin } from '../middleware/auth';
 
 const router = Router();
@@ -19,6 +19,8 @@ router.get('/:classId/reservations', requireAuth, isAdmin, getReservationsByClas
 
 // create a reservation for a class (authenticated member)
 router.post('/:classId/reservations', requireAuth, createReservation);
+// cancel reservation for a class (authenticated member)
+router.delete('/:classId/reservations', requireAuth, cancelReservation);
 
 // class CRUD by id (admin)
 router.get('/:id', getClassById);

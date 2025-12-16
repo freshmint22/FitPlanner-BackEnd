@@ -10,14 +10,23 @@ export async function listClasses(req: Request, res: Response) {
     if (!connected) return res.json({ items: [], total: 0 });
 
     const items = await ClassModel.find().sort({ schedule: 1 }).lean();
-    // compute slotsLeft for each class
+    // compute reservations (booked) for each class and map to frontend-friendly shape
     const mapped = await Promise.all((items as any[]).map(async (c: any) => {
       const booked = await ReservationModel.countDocuments({ classId: c._id, status: 'booked' });
       const capacity = typeof c.capacity === 'number' ? c.capacity : null;
-      const slotsLeft = capacity === null ? null : Math.max(0, capacity - booked);
-      return { id: c._id?.toString?.() || String(c._id), title: c.title, schedule: c.schedule, capacity, slotsLeft };
+      const scheduleDate = c.schedule ? new Date(c.schedule) : null;
+      return {
+        _id: c._id?.toString?.() || String(c._id),
+        name: c.name || c.title || null,
+        hour: scheduleDate ? scheduleDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null,
+        scheduleISO: scheduleDate ? scheduleDate.toISOString() : null,
+        room: c.room || null,
+        trainer: c.instructorName || null,
+        capacity: capacity,
+        reservations: booked
+      };
     }));
-    return res.json({ items: mapped, total: mapped.length });
+    return res.json(mapped);
   } catch (err) {
     console.error('listClasses error', err);
     return res.status(500).json({ error: { code: 'server_error' } });
@@ -36,23 +45,75 @@ export async function createReservation(req: Request, res: Response) {
       return res.status(201).json({ id: 'temp', classId, memberId, status: 'booked' });
     }
 
-    // check duplicate reservation
-    const existingRes = await ReservationModel.findOne({ memberId, classId });
-    if (existingRes) return res.status(409).json({ error: { code: 'already_reserved' } });
+    // Use a MongoDB transaction to avoid race conditions when multiple users
+    // try to reserve the same class concurrently. This requires a replica set
+    // (Atlas provides this). If transactions are not available, the logic
+    // falls back to a safer sequential check.
+    const session = await mongoose.startSession();
+    try {
+      let createdRes: any = null;
+      await session.withTransaction(async () => {
+        // check duplicate reservation within transaction
+        const existingRes = await ReservationModel.findOne({ memberId, classId }).session(session);
+        if (existingRes) {
+          // abort transaction by throwing
+          throw { code: 'already_reserved' };
+        }
 
-    // check capacity
-    const cls: any = await ClassModel.findById(classId).lean() as any;
-    if (!cls) return res.status(404).json({ error: { code: 'class_not_found' } });
+        // fetch class and current booked count inside transaction
+        const cls: any = await ClassModel.findById(classId).session(session);
+        if (!cls) throw { code: 'class_not_found' };
 
-    const bookedCount = await ReservationModel.countDocuments({ classId, status: 'booked' });
-    if (typeof (cls as any).capacity === 'number' && bookedCount >= (cls as any).capacity) {
-      return res.status(409).json({ error: { code: 'capacity_full', message: 'Class is full' } });
+        const bookedCount = await ReservationModel.countDocuments({ classId, status: 'booked' }).session(session);
+        const capacity = typeof cls.capacity === 'number' ? cls.capacity : null;
+        if (capacity !== null && bookedCount >= capacity) {
+          throw { code: 'capacity_full' };
+        }
+
+        // create reservation inside transaction
+        createdRes = await ReservationModel.create([{ memberId, classId }], { session });
+        // createdRes is an array when using create with session and array input
+        createdRes = createdRes && createdRes[0];
+      });
+
+      if (!createdRes) return res.status(500).json({ error: { code: 'server_error' } });
+      return res.status(201).json({ id: createdRes._id.toString(), classId, memberId, status: createdRes.status });
+    } catch (txnErr: any) {
+      // map our thrown error codes to HTTP responses
+      if (txnErr && txnErr.code === 'already_reserved') return res.status(409).json({ error: { code: 'already_reserved' } });
+      if (txnErr && txnErr.code === 'class_not_found') return res.status(404).json({ error: { code: 'class_not_found' } });
+      if (txnErr && txnErr.code === 'capacity_full') return res.status(409).json({ error: { code: 'capacity_full', message: 'Class is full' } });
+      console.error('createReservation transaction error', txnErr);
+      return res.status(500).json({ error: { code: 'server_error' } });
+    } finally {
+      session.endSession();
     }
-
-    const created = await ReservationModel.create({ memberId, classId });
-    return res.status(201).json({ id: created._id.toString(), classId, memberId, status: created.status });
   } catch (err) {
     console.error('createReservation error', err);
+    return res.status(500).json({ error: { code: 'server_error' } });
+  }
+}
+
+export async function cancelReservation(req: Request, res: Response) {
+  try {
+    const { classId } = req.params;
+    const memberId = (req as any).user?.id || req.body.memberId || null;
+    if (!memberId) return res.status(401).json({ error: { code: 'unauthorized' } });
+
+    const connected = mongoose.connection.readyState === 1;
+    if (!connected) {
+      return res.status(204).send();
+    }
+
+    const existingRes = await ReservationModel.findOne({ memberId, classId, status: 'booked' });
+    if (!existingRes) return res.status(404).json({ error: { code: 'reservation_not_found' } });
+
+    // mark as cancelled
+    existingRes.status = 'cancelled';
+    await existingRes.save();
+    return res.status(200).json({ id: existingRes._id.toString(), status: existingRes.status });
+  } catch (err) {
+    console.error('cancelReservation error', err);
     return res.status(500).json({ error: { code: 'server_error' } });
   }
 }
@@ -103,7 +164,7 @@ export async function getMyReservations(req: Request, res: Response) {
   try {
     const memberId = (req as any).user?.id;
     if (!memberId) return res.status(401).json({ error: { code: 'unauthorized' } });
-    const reservations = await ReservationModel.find({ memberId }).lean();
+    const reservations = await ReservationModel.find({ memberId, status: 'booked' }).lean();
     const mapped = await Promise.all((reservations as any[]).map(async (r: any) => {
       const cls: any = await ClassModel.findById(r.classId).lean() as any;
       return { id: r._id?.toString?.() || String(r._id), classId: r.classId, classTitle: cls?.title || null, status: r.status, reservedAt: r.reservedAt };

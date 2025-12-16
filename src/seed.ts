@@ -1,7 +1,8 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import { connectDB, disconnectDB } from './db';
 import Member from './models/member.model';
 import ClassModel from './models/class.model';
-import ReservationModel from './models/reservation.model';
 
 async function seed() {
   try {
@@ -55,46 +56,44 @@ async function seed() {
       console.log('Seeded base users');
     }
 
-    // Seed demo classes
-    const classesToSeed = [
-      { title: 'CrossFit', capacity: 20 },
-      { title: 'Spinning', capacity: 18 },
-      { title: 'Funcional', capacity: 16 },
-      { title: 'Yoga', capacity: 12 },
-    ];
+    console.log('Seeding completed');
 
-    const classIds: Array<{ id: string; title: string }> = [];
-    for (const c of classesToSeed) {
-      const created = await ClassModel.findOneAndUpdate(
-        { title: c.title },
-        { $setOnInsert: { title: c.title, capacity: c.capacity } },
-        { new: true, upsert: true }
-      ).lean() as any;
-      if (created?._id) classIds.push({ id: created._id.toString(), title: c.title });
-    }
-
-    // Seed some reservations per class only if none exist yet
-    const reservationPlan: Record<string, number> = {
-      CrossFit: 14,
-      Spinning: 9,
-      Funcional: 6,
-      Yoga: 4,
+    // --- Seed some persistent classes for the app UI ---
+    // helper: get next date for a given weekday (0=Sunday..6=Saturday) at provided hour/minute
+    const nextWeekdayDate = (weekday: number, hour = 9, minute = 0) => {
+      const today = new Date();
+      const result = new Date(today);
+      const diff = (weekday + 7 - result.getDay()) % 7;
+      result.setDate(result.getDate() + (diff === 0 ? 7 : diff)); // next occurrence (if today, choose next week)
+      result.setHours(hour, minute, 0, 0);
+      return result;
     };
 
-    for (const { id, title } of classIds) {
-      const existing = await ReservationModel.countDocuments({ classId: id });
-      if (existing === 0) {
-        const count = reservationPlan[title] ?? 0;
-        const docs = Array.from({ length: count }).map((_, i) => ({
-          memberId: `seed-user-${i + 1}`,
-          classId: id,
-          status: 'booked' as const,
-        }));
-        if (docs.length) await ReservationModel.insertMany(docs);
-      }
-    }
+    const classes = [
+      { name: 'Yoga Matutino', title: 'Yoga Matutino', description: 'Clase suave para activar el cuerpo y estirar', capacity: 20, schedule: nextWeekdayDate(1, 7, 0), instructorName: 'María Silva', room: 'Sala B' },
+      { name: 'Spinning', title: 'Spinning', description: 'Entrenamiento cardiovascular de alta intensidad', capacity: 25, schedule: nextWeekdayDate(2, 18, 30), instructorName: 'Juan Pérez', room: 'Sala de Ciclismo' },
+      { name: 'Funcional Full Body', title: 'Funcional Full Body', description: 'Entrenamiento combinado de fuerza y cardio', capacity: 20, schedule: nextWeekdayDate(1, 6, 0), instructorName: 'Laura Gómez', room: 'Sala 2' },
+      { name: 'Pilates Suave', title: 'Pilates Suave', description: 'Movimientos controlados para mejorar postura', capacity: 15, schedule: nextWeekdayDate(3, 9, 0), instructorName: 'Ana Torres', room: 'Sala A' },
+      { name: 'HIIT Express', title: 'HIIT Express', description: 'Intervalos cortos y potentes', capacity: 20, schedule: nextWeekdayDate(4, 12, 0), instructorName: 'Carlos Ruiz', room: 'Sala 1' },
+      { name: 'Zumba', title: 'Zumba', description: 'Baile y cardio al ritmo latino', capacity: 30, schedule: nextWeekdayDate(5, 19, 0), instructorName: 'Sofía Martínez', room: 'Sala B' },
+      { name: 'BodyPump', title: 'BodyPump', description: 'Entrenamiento con barras y pesas', capacity: 22, schedule: nextWeekdayDate(6, 17, 0), instructorName: 'Miguel Ramos', room: 'Sala Principal' },
+      { name: 'Core & Stretch', title: 'Core & Stretch', description: 'Fortalecimiento del core y estiramientos', capacity: 18, schedule: nextWeekdayDate(1, 8, 30), instructorName: 'Laura Vega', room: 'Sala 2' },
+      { name: 'TRX', title: 'TRX', description: 'Entrenamiento en suspensión', capacity: 12, schedule: nextWeekdayDate(3, 20, 0), instructorName: 'Andrés Melo', room: 'Zona Functional' },
+      { name: 'Boxing', title: 'Boxing', description: 'Técnica y acondicionamiento', capacity: 20, schedule: nextWeekdayDate(4, 21, 0), instructorName: 'Diego Flores', room: 'Sala de Combate' },
+      // Latin / dance classes across the week
+      { name: 'Salsa Social', title: 'Salsa Social', description: 'Ritmos de salsa para todos los niveles', capacity: 25, schedule: nextWeekdayDate(1, 20, 0), instructorName: 'Rosa Díaz', room: 'Sala Dance' },
+      { name: 'Bachata Sensual', title: 'Bachata Sensual', description: 'Técnica y conexión', capacity: 20, schedule: nextWeekdayDate(2, 20, 0), instructorName: 'Luis Herrera', room: 'Sala Dance' },
+      { name: 'Merengue Energetico', title: 'Merengue', description: 'Clase dinámica y divertida', capacity: 30, schedule: nextWeekdayDate(3, 18, 0), instructorName: 'Mariana Cruz', room: 'Sala B' },
+      { name: 'Reggaeton Fit', title: 'Reggaeton Fit', description: 'Cardio al ritmo urbano', capacity: 28, schedule: nextWeekdayDate(4, 19, 30), instructorName: 'Andrés Ramos', room: 'Sala 1' },
+      { name: 'Kizomba Flow', title: 'Kizomba Flow', description: 'Movimiento suave y técnica', capacity: 18, schedule: nextWeekdayDate(5, 18, 30), instructorName: 'Sonia López', room: 'Sala Dance' },
+      { name: 'Tango Argentino', title: 'Tango Argentino', description: 'Postura y abrazo', capacity: 16, schedule: nextWeekdayDate(6, 19, 0), instructorName: 'Pablo Ruiz', room: 'Sala A' },
+      { name: 'Samba Ritmo', title: 'Samba Ritmo', description: 'Ritmos brasileños y energía', capacity: 30, schedule: nextWeekdayDate(0, 17, 0), instructorName: 'Camila Silva', room: 'Sala B' }
+    ];
 
-    console.log('Seeding completed');
+    for (const c of classes) {
+      await ClassModel.updateOne({ name: c.name }, { $set: c }, { upsert: true });
+    }
+    console.log('Seeded classes');
   } catch (err) {
     console.error('Seeding failed', err);
     process.exit(1);
