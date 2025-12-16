@@ -186,19 +186,58 @@ export const getIngresosMensualesService = async () => {
     {
       $group: {
         _id: { month: { $month: "$date" } },
-        monto: { $sum: "$amount" }
+        monto: { $sum: "$amount" },
+        cantidad: { $sum: 1 }
+      }
+    }
+  ]);
+
+  const membresiasCompradas = await Member.aggregate([
+    {
+      $match: {
+        "membership.startDate": { $exists: true }
+      }
+    },
+    {
+      $group: {
+        _id: { month: { $month: "$membership.startDate" } },
+        total: { $sum: 1 }
+      }
+    }
+  ]);
+  const membresiasCompradasConPrecio = await Member.aggregate([
+    {
+      $match: {
+        "membership.startDate": { $exists: true }
+      }
+    },
+    {
+      $group: {
+        _id: { month: { $month: "$membership.startDate" } },
+        total: { $sum: 1 },
+        ingresosMembresias: { $sum: "$membership.price" }
       }
     }
   ]);
 
   const meses = Array.from({ length: 12 }, (_, i) => ({
     mes: i + 1,
-    monto: 0
+    monto: 0,
+    pagos: 0,
+    membresiasCompradas: 0,
+    ingresosMembresias: 0
   }));
 
   pagos.forEach((p) => {
     const index = p._id.month - 1;
     meses[index].monto = p.monto;
+    meses[index].pagos = p.cantidad;
+  });
+
+  membresiasCompradasConPrecio.forEach((m) => {
+    const index = m._id.month - 1;
+    meses[index].membresiasCompradas = m.total;
+    meses[index].ingresosMembresias = m.ingresosMembresias || 0;
   });
 
   return meses;

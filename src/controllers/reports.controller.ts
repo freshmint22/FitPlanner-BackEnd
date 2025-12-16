@@ -122,35 +122,66 @@ export const obtenerReporteClases = async (req: Request, res: Response) => {
   try {
     const { entrenador } = req.query;
 
-    const query: any = {};
+    const pipeline: any[] = [
+      { $match: { classId: { $exists: true, $ne: null } } },
+      {
+        $group: {
+          _id: "$classId",
+          asistentes: { $sum: 1 },
+        },
+      },
+      { $sort: { asistentes: -1 } },
+      {
+        $lookup: {
+          from: "classes",
+          localField: "_id",
+          foreignField: "_id",
+          as: "classInfo",
+        },
+      },
+      { $unwind: { path: "$classInfo", preserveNullAndEmptyArrays: true } },
+    ];
+
     if (entrenador) {
-      query.instructorName = { $regex: entrenador.toString(), $options: "i" };
+      pipeline.push({
+        $match: {
+          "classInfo.instructorName": { $regex: entrenador.toString(), $options: "i" },
+        },
+      });
     }
 
-    const clases = await ClassModel.find(query).lean();
-
-    const reporte = await Promise.all(
-      clases.map(async (clase: any) => {
-        const asistentes = await Attendance.countDocuments({ classId: clase._id });
-
-        const ocupacion =
-          clase.capacity > 0 ? Math.round((asistentes / clase.capacity) * 100) : 0;
-
-        return {
-          nombre: clase.name,
-          entrenador: clase.instructorName,
-          fecha: clase.date,
-          cupos: clase.capacity,
-          asistentes,
-          ocupacion,
-        };
-      })
-    );
-
-    return res.json({
-      ok: true,
-      reporte,
+    pipeline.push({
+      $project: {
+        nombre: {
+          $ifNull: ["$classInfo.name", { $ifNull: ["$classInfo.title", "Clase"] }],
+        },
+        entrenador: "$classInfo.instructorName",
+        fecha: { $ifNull: ["$classInfo.date", "$classInfo.schedule"] },
+        cupos: { $ifNull: ["$classInfo.capacity", 0] },
+        asistentes: 1,
+        ocupacion: {
+          $cond: [
+            { $gt: [{ $ifNull: ["$classInfo.capacity", 0] }, 0] },
+            {
+              $round: [
+                {
+                  $multiply: [
+                    { $divide: ["$asistentes", { $ifNull: ["$classInfo.capacity", 1] }] },
+                    100,
+                  ],
+                },
+                0,
+              ],
+            },
+            0,
+          ],
+        },
+      },
     });
+
+    const reporte = await Attendance.aggregate(pipeline);
+
+    return res.json({ ok: true, reporte });
 
   } catch (error) {
     console.error("Error generando reporte de clases:", error);

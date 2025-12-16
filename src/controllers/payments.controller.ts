@@ -57,3 +57,26 @@ export const getUserPayments = async (req: Request, res: Response) => {
     return res.status(500).json({ status: 'error', message: error.message });
   }
 };
+
+export const getAllPayments = async (req: Request, res: Response) => {
+  try {
+    const payments = await Payment.find().sort({ date: -1 }).limit(500).lean();
+    const memberIds = Array.from(new Set(payments.map((p) => String(p.memberId)))).filter(Boolean);
+
+    const members = await Member.find({ _id: { $in: memberIds } })
+      .select("firstName lastName email")
+      .lean();
+
+    const memberMap = new Map(members.map((m) => [String(m._id), m]));
+
+    const enriched = payments.map((p) => ({
+      ...p,
+      member: memberMap.get(String(p.memberId)) || null,
+    }));
+
+    return res.json({ status: 'success', data: enriched });
+  } catch (error: any) {
+    console.error(error);
+    return res.status(500).json({ status: 'error', message: error.message });
+  }
+};

@@ -48,6 +48,7 @@ app.use(apiPrefixRewrite);
 
 app.use("/members", membersRouter);
 app.use("/api/miembros", membersRouter);
+app.use("/api/members", membersRouter);
 
 app.use("/routines", routinesRouter);
 app.use("/users", usersRouter);
@@ -71,6 +72,7 @@ app.use("/api/attendances", attendanceRoutes);
 app.use("/attendances", attendanceRoutes);
 
 app.use("/reportes", reportsRoutes);
+app.use("/api/reportes", reportsRoutes);
 app.use("/pagos", paymentsRoutes);
 // Also mount payments under the /api prefix so frontend calls to /api/pagos succeed
 app.use("/api/pagos", paymentsRoutes);

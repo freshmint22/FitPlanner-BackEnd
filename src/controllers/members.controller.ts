@@ -40,7 +40,10 @@ export const updateMember = async (req: Request, res: Response, next: NextFuncti
   try {
     const memberId = req.params.id;
 
-    if (!req.user || String(req.user.id) !== String(memberId)) {
+    const isSelf = req.user && String(req.user.id) === String(memberId);
+    const role = (req.user as any).role || (req.user as any).rol;
+    const isAdmin = role === "ADMIN" || role === "admin";
+    if (!req.user || (!isSelf && !isAdmin)) {
       return res.status(403).json({ message: "No autorizado" });
     }
 
