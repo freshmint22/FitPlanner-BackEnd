@@ -14,6 +14,7 @@ import paymentsRoutes from "./routes/payments.routes";
 import notificationsRoutes from "./routes/notifications.routes";
 import gymInfoRoutes from "./routes/gymInfo.routes";
 import plansRoutes from "./routes/plans.routes";
+import aiRoutes from './routes/ai.routes';
 import { errorHandler } from "./middleware/errorHandler";
 import generalConfigRoutes from "./routes/generalConfig.routes";
 
@@ -54,6 +55,10 @@ app.use('/classes', classesRouter);
 app.use('/routines', routinesRouter2);
 
 app.use("/auth", authRouter);
+// Also mount under /api/auth so requests to /auth (rewritten or direct)
+// and /api/auth are both handled. This ensures legacy frontend calls
+// and the newer `/api`-prefixed calls work in production.
+app.use("/api/auth", authRouter);
 
 app.use("/api/attendances", attendanceRoutes);
 // Legacy frontend may call /attendances without the /api prefix — support both
@@ -69,6 +74,9 @@ app.use("/", notificationsRoutes);
 app.use("/", gymInfoRoutes);
 
 app.use("/planes", plansRoutes);
+
+// AI routines endpoint (server-side uses OPENAI_API_KEY)
+app.use('/api/ai', aiRoutes);
 
 app.use("/configuracion/general", generalConfigRoutes);
 
