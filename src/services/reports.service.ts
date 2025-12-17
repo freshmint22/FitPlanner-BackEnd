@@ -1,5 +1,6 @@
 import Member from "../models/member.model";
 import Payment from "../models/payment.model";
+import Membership from "../models/membership.model";
 
 /* ============================================
    SERVICIO EXISTENTE — REPORTE DE INGRESOS
@@ -130,7 +131,8 @@ export const getActiveMembersReportService = async ({
 import Attendance from "../models/attendance.model";
 
 export const getDashboardKPIsService = async () => {
-  const totalMiembros = await Member.countDocuments();
+  // Count active members only
+  const totalMiembros = await Member.countDocuments({ estado: 'activo' });
 
   const inicioMes = new Date();
   inicioMes.setDate(1);
@@ -141,21 +143,18 @@ export const getDashboardKPIsService = async () => {
   finMes.setDate(0);
   finMes.setHours(23, 59, 59, 999);
 
-  const ingresos = await Payment.aggregate([
-    {
-      $match: {
-        date: { $gte: inicioMes, $lte: finMes }
-      }
-    },
-    {
-      $group: {
-        _id: null,
-        total: { $sum: "$amount" }
-      }
-    }
+  // Sum payments for current month
+  const ingresosMesAgg = await Payment.aggregate([
+    { $match: { date: { $gte: inicioMes, $lte: finMes } } },
+    { $group: { _id: null, total: { $sum: "$amount" } } }
   ]);
+  const ingresosMes = ingresosMesAgg.length > 0 ? ingresosMesAgg[0].total : 0;
 
-  const ingresosMes = ingresos.length > 0 ? ingresos[0].total : 0;
+  // Total accumulated income from all payments
+  const totalIngresosAgg = await Payment.aggregate([
+    { $group: { _id: null, total: { $sum: "$amount" } } }
+  ]);
+  const ingresosTotales = totalIngresosAgg.length > 0 ? totalIngresosAgg[0].total : 0;
 
   const hoyInicio = new Date();
   hoyInicio.setHours(0, 0, 0, 0);
@@ -167,12 +166,14 @@ export const getDashboardKPIsService = async () => {
     date: { $gte: hoyInicio, $lte: hoyFin }
   });
 
-  const retencion =
-    totalMiembros > 0 ? Math.round((totalMiembros / totalMiembros) * 100) : 0;
+  const activos = totalMiembros;
+  const totalMiembrosDB = await Member.countDocuments();
+  const retencion = totalMiembrosDB > 0 ? Math.round((activos / totalMiembrosDB) * 100) : 0;
 
   return {
-    totalMiembros,
+    totalMiembros: activos,
     ingresosMes,
+    ingresosTotales,
     checkinsHoy,
     retencion
   };
@@ -182,78 +183,48 @@ export const getDashboardKPIsService = async () => {
    INGRESOS MENSUALES (12 MESES)
 ========================================================== */
 export const getIngresosMensualesService = async () => {
+  // Aggregate payments by month/year for the last 12 months
+  const end = new Date();
+  const start = new Date();
+  start.setMonth(start.getMonth() - 11);
+  start.setDate(1);
+  start.setHours(0, 0, 0, 0);
+
   const pagos = await Payment.aggregate([
+    { $match: { date: { $gte: start, $lte: end } } },
     {
       $group: {
-        _id: { month: { $month: "$date" } },
+        _id: { month: { $month: "$date" }, year: { $year: "$date" } },
         monto: { $sum: "$amount" },
-        cantidad: { $sum: 1 }
-      }
-    }
-  ]);
-
-  const membresiasCompradas = await Member.aggregate([
-    {
-      $match: {
-        "membership.startDate": { $exists: true }
+        pagos: { $sum: 1 }
       }
     },
-    {
-      $group: {
-        _id: { month: { $month: "$membership.startDate" } },
-        total: { $sum: 1 }
-      }
-    }
-  ]);
-  const membresiasCompradasConPrecio = await Member.aggregate([
-    {
-      $match: {
-        "membership.startDate": { $exists: true }
-      }
-    },
-    {
-      $group: {
-        _id: { month: { $month: "$membership.startDate" } },
-        total: { $sum: 1 },
-        ingresosMembresias: { $sum: "$membership.price" }
-      }
-    }
+    { $sort: { "_id.year": 1, "_id.month": 1 } }
   ]);
 
-  const meses = Array.from({ length: 12 }, (_, i) => ({
-    mes: i + 1,
-    monto: 0,
-    pagos: 0,
-    membresiasCompradas: 0,
-    ingresosMembresias: 0
+  // Map aggregation to a simpler array ordered by year/month
+  const result = pagos.map((p: any) => ({
+    mes: p._id.month,
+    año: p._id.year,
+    monto: p.monto,
+    pagos: p.pagos
   }));
 
-  pagos.forEach((p) => {
-    const index = p._id.month - 1;
-    meses[index].monto = p.monto;
-    meses[index].pagos = p.cantidad;
-  });
-
-  membresiasCompradasConPrecio.forEach((m) => {
-    const index = m._id.month - 1;
-    meses[index].membresiasCompradas = m.total;
-    meses[index].ingresosMembresias = m.ingresosMembresias || 0;
-  });
-
-  return meses;
+  return result;
 };
 
 /* ==========================================================
    NUEVOS MIEMBROS POR MES (CORREGIDO)
 ========================================================== */
-export const getNuevosMiembrosPorMesService = async () => {
+export const getNuevosMiembrosPorMesService = async (createdBy?: string) => {
   const hace12meses = new Date();
   hace12meses.setMonth(hace12meses.getMonth() - 12);
 
+  const match: any = { createdAt: { $gte: hace12meses } };
+  if (createdBy) match.createdBy = createdBy;
+
   const datos = await Member.aggregate([
-    {
-      $match: { createdAt: { $gte: hace12meses } }
-    },
+    { $match: match },
     {
       $group: {
         _id: {
@@ -266,18 +237,15 @@ export const getNuevosMiembrosPorMesService = async () => {
     { $sort: { "_id.year": 1, "_id.month": 1 } }
   ]);
 
-  // CREAR ARREGLO DE 12 MESES
-  const meses = Array.from({ length: 12 }, (_, i) => ({
-    mes: i + 1,
-    total: 0
-  }));
-
-  // RELLENAR DATOS
-  datos.forEach((d) => {
-    meses[d._id.month - 1].total = d.total;
-  });
-
+  const meses = Array.from({ length: 12 }, (_, i) => ({ mes: i + 1, total: 0 }));
+  datos.forEach((d) => { meses[d._id.month - 1].total = d.total; });
   return meses;
+};
+
+/** Devuelve el número de membresías activas actualmente */
+export const getActiveMembershipsCountService = async () => {
+  const count = await Membership.countDocuments({ active: true });
+  return count;
 };
 
 

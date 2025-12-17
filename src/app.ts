@@ -51,6 +51,8 @@ app.use("/api/members", membersRouter);
 app.use("/api/miembros", membersRouter);
 
 app.use("/routines", routinesRouter);
+// Also support API-prefixed routines calls
+app.use("/api/routines", routinesRouter);
 app.use("/users", usersRouter);
 app.use("/api/users", usersRouter);
 app.use('/classes', classesRouter);
@@ -69,6 +71,11 @@ app.use("/api/attendances", attendanceRoutes);
 app.use("/attendances", attendanceRoutes);
 
 app.use("/reportes", reportsRoutes);
+// Provide English + /api aliases for reports
+app.use("/reports", reportsRoutes);
+app.use("/api/reports", reportsRoutes);
+// Spanish `/api/reportes` alias (frontend may call this exact path)
+app.use("/api/reportes", reportsRoutes);
 app.use("/pagos", paymentsRoutes);
 
 app.use("/notifications", notificationsRoutes);

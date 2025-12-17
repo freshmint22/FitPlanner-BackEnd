@@ -1,4 +1,4 @@
-import { Schema, model, Document } from "mongoose";
+import mongoose, { Schema, model, Document, Model } from "mongoose";
 
 export interface IMember extends Document {
   firstName?: string;
@@ -83,5 +83,6 @@ const MemberSchema = new Schema<IMember>(
   { timestamps: true }
 );
 
-const Member = model<IMember>("Member", MemberSchema);
+type MemberModelType = Model<IMember>;
+const Member: MemberModelType = ((mongoose.models && (mongoose.models as any).Member) as MemberModelType) || model<IMember>("Member", MemberSchema) as MemberModelType;
 export default Member;

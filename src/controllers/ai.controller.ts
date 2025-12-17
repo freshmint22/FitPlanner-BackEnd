@@ -15,7 +15,7 @@ export async function createRoutineAI(req: Request, res: Response) {
 }
 
 export default createRoutineAI;
-import { Request, Response } from 'express';
+// (duplicate import removed) Request/Response already imported above
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
 
