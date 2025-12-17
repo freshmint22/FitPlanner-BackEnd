@@ -26,6 +26,8 @@ export interface IMember extends Document {
   // 🔐 RECUPERAR CONTRASEÑA
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
+  // Usuario que creó este miembro (opcional)
+  createdBy?: Schema.Types.ObjectId | string;
 
   createdAt: Date;
   updatedAt: Date;
@@ -69,6 +71,7 @@ const MemberSchema = new Schema<IMember>(
         paymentMethod: String
       }
     },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'Member', index: true },
 
     planActual: { type: String, default: null },
     fechaCambioPlan: { type: Date },

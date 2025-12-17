@@ -26,6 +26,10 @@ export const getMembers = async (req: Request, res: Response, next: NextFunction
  */
 export const createMember = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    // attach creator if authenticated
+    if (req.user && (req.user as any).id) {
+      req.body.createdBy = (req.user as any).id;
+    }
     const created = await memberService.createMember(req.body);
     res.status(201).json(created);
   } catch (err) {
