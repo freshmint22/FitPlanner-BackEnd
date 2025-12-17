@@ -270,7 +270,7 @@ export async function getRoutineExercisesForUser(req: Request, res: Response) {
 
     const normalized = {
       _id: (routine as any)._id?.toString?.() || String((routine as any)._id),
-      name: (routine as any).nombre || (routine as any).name || `Rutina ${routine._id}`,
+      name: (routine as any).nombre || (routine as any).name || `Rutina ${(routine as any)._id}`,
       frequency: (routine as any).diasPorSemana ? `${(routine as any).diasPorSemana} días/semana` : undefined,
       focus: Array.isArray((routine as any).enfoque) ? (routine as any).enfoque.join(', ') : (routine as any).enfoque || '',
       status: (routine as any).estado || 'Activa',

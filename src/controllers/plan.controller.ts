@@ -92,13 +92,13 @@ export const deactivatePlan = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const plan = await PlanService.deactivate(id);
-
-    if (!plan) {
+    // Permanently delete the plan from the DB (admin action)
+    const deleted = await PlanService.delete(id);
+    if (!deleted) {
       return res.status(404).json({ ok: false, msg: "Plan no encontrado" });
     }
 
-    return res.json({ ok: true, msg: "Plan deshabilitado" });
+    return res.json({ ok: true, msg: "Plan eliminado" });
   } catch (error: any) {
     return res.status(500).json({ ok: false, msg: error.message });
   }

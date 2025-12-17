@@ -3,16 +3,29 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import Member from '../models/member.model';
-import { sendResetPasswordEmail } from '../utils/mailer';
+import { sendResetEmail } from '../utils/mailer';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
+
+// Normalize email input consistently across register/login/forgot-password
+function normalizeEmail(input?: string): string {
+  const raw = (input || '').toString();
+  const lower = raw.toLowerCase().trim();
+  // remove the '(.gym)' marker when present
+  return lower.replace(/\(\.gym\)/g, '').normalize('NFKC').trim();
+}
+
+function hasAdminMarker(input?: string): boolean {
+  const raw = (input || '').toString().toLowerCase().trim();
+  return /\(\.gym\)/.test(raw) || raw.endsWith('@gym.com');
+}
 
 export const register = async (req: Request, res: Response) => {
   try {
     const { firstName, lastName, email, password, role } = req.body;
     const emailRaw = (email || '').toString();
     const emailLower = emailRaw.toLowerCase().trim();
-    const normalizedEmail = emailLower.replace(/\(\.gym\)/g, '').normalize('NFKC').trim();
+    const normalizedEmail = normalizeEmail(email);
 
     // Validate required fields / Validar campos requeridos
     if (!email || !password) {
@@ -34,7 +47,7 @@ export const register = async (req: Request, res: Response) => {
 
     // Determine role based on email markers / Determinar rol basado en dominio del email
     let userRole = 'user';
-    if (emailLower.includes('(.gym)') || emailLower.endsWith('@gym.com')) {
+    if (hasAdminMarker(email)) {
       userRole = 'admin';
     } else if (role === 'ADMIN') {
       // If trying to register as ADMIN without gym marker, reject
@@ -91,7 +104,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // Buscar usuario
-    const member = await Member.findOne({ email: email.toLowerCase() });
+    const member = await Member.findOne({ email: normalizeEmail(email) });
     if (!member) {
       return res.status(401).json({
         error: { code: 'invalid_credentials', message: 'Invalid email or password' }
@@ -169,11 +182,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ ok: false, error: 'Email required' });
 
-    if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      return res.status(500).json({ ok: false, error: 'Email service not configured' });
-    }
-
-    const user = await Member.findOne({ email: email.toLowerCase() });
+    const user = await Member.findOne({ email: normalizeEmail(email) });
 
     // Always respond OK to avoid leaking which emails exist
     if (!user) return res.status(200).json({ ok: true });
@@ -182,19 +191,15 @@ export const forgotPassword = async (req: Request, res: Response) => {
     (user as any).resetPasswordToken = token;
     (user as any).resetPasswordExpires = new Date(Date.now() + 3600 * 1000); // 1 hour
     await user.save();
-
-    // Construir link al frontend
-    const frontendBase = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const resetLink = `${frontendBase.replace(/\/$/, '')}/reset-password?token=${token}`;
-
+    // Send a reset email with the token (best-effort)
     try {
-      await sendResetPasswordEmail(user.email, resetLink);
+      const to = user.email as string;
+      await sendResetEmail(to, token);
     } catch (mailErr) {
-      console.error('Failed sending reset email', mailErr);
-      // No revelar fallo de envío al cliente para no filtrar info
+      console.warn('Could not send reset email:', mailErr);
+      // swallow — still return ok to the client to avoid leaking
     }
 
-    // In tests we don't send real emails; just return ok
     return res.status(200).json({ ok: true });
   } catch (error) {
     console.error('Forgot password error:', error);

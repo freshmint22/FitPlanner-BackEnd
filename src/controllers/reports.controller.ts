@@ -5,6 +5,7 @@ import {
   getActiveMembersReportService,
   getDashboardKPIsService,
   getIngresosMensualesService
+  , getActiveMembershipsCountService
 } from "../services/reports.service";
 
 import ExcelJS from "exceljs";
@@ -58,6 +59,16 @@ export const obtenerMiembrosActivos = async (req: Request, res: Response) => {
       ok: false,
       msg: "Error generando reporte"
     });
+  }
+};
+
+export const obtenerMiembrosActivosCount = async (req: Request, res: Response) => {
+  try {
+    const count = await getActiveMembershipsCountService();
+    return res.status(200).json({ ok: true, activeMemberships: count });
+  } catch (error) {
+    console.error('Error getting active memberships count:', error);
+    return res.status(500).json({ ok: false, msg: 'Error obteniendo conteo' });
   }
 };
 
@@ -261,11 +272,7 @@ export const exportarReporteClasesExcel = async (req: Request, res: Response) =>
 export const obtenerDashboardKPIs = async (req: Request, res: Response) => {
   try {
     const data = await getDashboardKPIsService();
-
-    return res.status(200).json({
-      ok: true,
-      data,
-    });
+    return res.status(200).json({ ok: true, data });
   } catch (error) {
     console.error("Error obteniendo KPIs del dashboard:", error);
     return res.status(500).json({
@@ -299,19 +306,14 @@ import { getNuevosMiembrosPorMesService } from "../services/reports.service";
 
 export const obtenerNuevosMiembrosPorMes = async (req: Request, res: Response) => {
   try {
-    const data = await getNuevosMiembrosPorMesService();
+    const createdBy = req.query.createdBy?.toString();
+    const data = await getNuevosMiembrosPorMesService(createdBy);
 
-    return res.status(200).json({
-      ok: true,
-      data,
-    });
+    return res.status(200).json({ ok: true, data });
 
   } catch (error) {
     console.error("Error obteniendo nuevos miembros por mes:", error);
-    return res.status(500).json({
-      ok: false,
-      msg: "Error obteniendo nuevos miembros por mes"
-    });
+    return res.status(500).json({ ok: false, msg: "Error obteniendo nuevos miembros por mes" });
   }
 };
 import Member from "../models/member.model";  // 👈 AGREGA ESTO ANTES DE USAR Member
