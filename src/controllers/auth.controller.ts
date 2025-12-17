@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import Member from '../models/member.model';
+import { sendResetPasswordEmail } from '../utils/mailer';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 
@@ -168,6 +169,10 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ ok: false, error: 'Email required' });
 
+    if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      return res.status(500).json({ ok: false, error: 'Email service not configured' });
+    }
+
     const user = await Member.findOne({ email: email.toLowerCase() });
 
     // Always respond OK to avoid leaking which emails exist
@@ -177,6 +182,17 @@ export const forgotPassword = async (req: Request, res: Response) => {
     (user as any).resetPasswordToken = token;
     (user as any).resetPasswordExpires = new Date(Date.now() + 3600 * 1000); // 1 hour
     await user.save();
+
+    // Construir link al frontend
+    const frontendBase = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetLink = `${frontendBase.replace(/\/$/, '')}/reset-password?token=${token}`;
+
+    try {
+      await sendResetPasswordEmail(user.email, resetLink);
+    } catch (mailErr) {
+      console.error('Failed sending reset email', mailErr);
+      // No revelar fallo de envío al cliente para no filtrar info
+    }
 
     // In tests we don't send real emails; just return ok
     return res.status(200).json({ ok: true });
