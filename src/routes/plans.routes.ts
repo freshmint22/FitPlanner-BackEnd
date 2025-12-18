@@ -7,7 +7,9 @@ import {
   createPlan,
   updatePlan,
   deactivatePlan,
-  changeUserPlan
+   changeUserPlan,
+   purchasePlan,
+   cancelPurchase
 } from "../controllers/plan.controller";
 
 const router = Router();
@@ -32,10 +34,15 @@ router.delete("/:id", validarJWT, isAdmin, deactivatePlan);
       RUTAS PARA USUARIOS
    =================================================== */
 
-// Obtener SOLO planes activos (vista de membresías)
-router.get("/activos", validarJWT, getPlanesActivos);
+// Obtener SOLO planes activos (vista de membresías) — público
+router.get("/activos", getPlanesActivos);
 
 // Cambiar plan del usuario
 router.put("/usuario/:id", validarJWT, isAdmin, changeUserPlan);
+
+// Compra / suscripción de plan (usuario autenticado)
+router.post('/purchase', validarJWT, purchasePlan);
+// Cancel current user's subscription
+router.post('/cancel', validarJWT, cancelPurchase);
 
 export default router;

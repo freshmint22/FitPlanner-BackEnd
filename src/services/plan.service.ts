@@ -23,11 +23,11 @@ class PlanService {
   }
 
   async deactivate(id: string) {
-    return await Plan.findByIdAndUpdate(
-      id,
-      { estado: "inactivo" },
-      { new: true }
-    );
+    return await Plan.findByIdAndUpdate(id, { estado: "inactivo" }, { new: true });
+  }
+
+  async delete(id: string) {
+    return await Plan.findByIdAndDelete(id);
   }
 }
 

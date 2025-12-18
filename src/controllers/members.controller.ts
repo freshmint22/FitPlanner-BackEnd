@@ -26,6 +26,10 @@ export const getMembers = async (req: Request, res: Response, next: NextFunction
  */
 export const createMember = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    // attach creator if authenticated
+    if (req.user && (req.user as any).id) {
+      req.body.createdBy = (req.user as any).id;
+    }
     const created = await memberService.createMember(req.body);
     res.status(201).json(created);
   } catch (err) {
@@ -39,6 +43,10 @@ export const createMember = async (req: Request, res: Response, next: NextFuncti
 export const updateMember = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const memberId = req.params.id;
+
+    // Debug log to inspect incoming update requests
+    // eslint-disable-next-line no-console
+    console.log('PUT /members/:id called with id=', memberId, ' req.user=', req.user);
 
     if (!req.user || String(req.user.id) !== String(memberId)) {
       return res.status(403).json({ message: "No autorizado" });

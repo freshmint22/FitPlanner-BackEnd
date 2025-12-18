@@ -1,4 +1,4 @@
-import { Schema, model, Document } from "mongoose";
+import mongoose, { Schema, model, Document, Model } from "mongoose";
 
 export interface IMember extends Document {
   firstName?: string;
@@ -26,6 +26,8 @@ export interface IMember extends Document {
   // 🔐 RECUPERAR CONTRASEÑA
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
+  // Usuario que creó este miembro (opcional)
+  createdBy?: Schema.Types.ObjectId | string;
 
   createdAt: Date;
   updatedAt: Date;
@@ -65,9 +67,11 @@ const MemberSchema = new Schema<IMember>(
         price: Number,
         duration: Number,
         startDate: Date,
-        endDate: Date
+        endDate: Date,
+        paymentMethod: String
       }
     },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'Member', index: true },
 
     planActual: { type: String, default: null },
     fechaCambioPlan: { type: Date },
@@ -79,5 +83,6 @@ const MemberSchema = new Schema<IMember>(
   { timestamps: true }
 );
 
-const Member = model<IMember>("Member", MemberSchema);
+type MemberModelType = Model<IMember>;
+const Member: MemberModelType = ((mongoose.models && (mongoose.models as any).Member) as MemberModelType) || model<IMember>("Member", MemberSchema) as MemberModelType;
 export default Member;

@@ -8,6 +8,7 @@ export interface IClass extends Document {
   schedule?: Date;
   date?: Date;
   instructorName?: string;
+  room?: string;
   trainerId?: mongoose.Types.ObjectId | string;
   createdAt?: Date;
 }
@@ -24,6 +25,8 @@ const ClassSchema = new Schema<IClass>({
   date: { type: Date },
   // canonical schedule field
   schedule: { type: Date },
+  // part/room of the gym where the class is held
+  room: { type: String },
   // legacy instructor name used by reports
   instructorName: { type: String },
   trainerId: { type: Schema.Types.ObjectId, ref: 'Member' },

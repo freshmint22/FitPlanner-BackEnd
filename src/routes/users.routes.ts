@@ -10,8 +10,81 @@ import { getProfile } from "../controllers/auth.controller";
 
 const router = Router();
 
+// POST /users/membership/purchase - simulate a purchase for authenticated user
+router.post('/membership/purchase', requireAuth, async (req: Request & { user?: { id?: string } }, res: Response) => {
+  try {
+    const memberId = req.user?.id as string;
+    if (!memberId) return res.status(401).json({ error: 'unauthenticated' });
+
+    const { planName, price, durationDays, method } = req.body || {};
+    const amount = Number(price) || 0;
+    const days = Number(durationDays) || 30;
+
+    // mark previous memberships inactive
+    await Membership.updateMany({ memberId, active: true }, { active: false }).catch(() => {});
+
+    const startsAt = new Date();
+    const endsAt = new Date(startsAt.getTime() + days * 24 * 60 * 60 * 1000);
+
+    const membership = await Membership.create({ memberId, planName: planName || 'Desconocido', startsAt, endsAt, active: true });
+
+    await Payment.create({ memberId, amount, method: method || 'Simulado' });
+
+    await Member.findByIdAndUpdate(memberId, { membership: { name: planName, price: amount, duration: days, startDate: startsAt, endDate: endsAt }, planActual: planName, fechaCambioPlan: new Date() });
+
+    return res.json({ membership, nextPayment: endsAt, paymentMethod: method || 'Simulado' });
+  } catch (err) {
+    console.error('membership purchase error', err);
+    return res.status(500).json({ error: 'server_error' });
+  }
+});
+
+// POST /users/membership/cancel - cancel current membership
+router.post('/membership/cancel', requireAuth, async (req: Request & { user?: { id?: string } }, res: Response) => {
+  try {
+    const memberId = req.user?.id as string;
+    if (!memberId) return res.status(401).json({ error: 'unauthenticated' });
+
+    await Membership.updateMany({ memberId, active: true }, { active: false });
+    await Member.findByIdAndUpdate(memberId, { membership: null, planActual: null });
+
+    return res.json({ ok: true, status: 'cancelled' });
+  } catch (err) {
+    console.error('membership cancel error', err);
+    return res.status(500).json({ error: 'server_error' });
+  }
+});
+
 // Endpoint de perfil con autenticación
 router.get("/profile", requireAuth, getProfile);
+
+// Admin-only helper: backfill payments for members that have a membership but no payments
+router.post(
+  "/backfill-payments",
+  requireAuth,
+  async (req: Request & { user?: { rol?: string } }, res: Response) => {
+    try {
+      if (req.user?.rol !== 'admin') return res.status(403).json({ error: 'forbidden' });
+
+      const membersWithMembership = await Member.find({ membership: { $ne: null } }).lean();
+      let created = 0;
+
+      for (const m of membersWithMembership) {
+        const exists = await Payment.findOne({ memberId: m._id.toString() }).lean();
+        if (!exists) {
+          const amount = (m as any).membership?.price || 0;
+          await Payment.create({ memberId: m._id.toString(), amount, method: 'AdminBackfill' });
+          created += 1;
+        }
+      }
+
+      return res.json({ ok: true, created });
+    } catch (err) {
+      console.error('Backfill payments error', err);
+      return res.status(500).json({ error: 'server_error' });
+    }
+  }
+);
 
 // Función para sanear búsquedas regex
 function escapeRegex(input: string) {

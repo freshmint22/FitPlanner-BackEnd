@@ -46,12 +46,18 @@ app.use(apiPrefixRewrite);
 
 
 app.use("/members", membersRouter);
+// Mount members under /api/members so frontend calls to /api/members/:id resolve
+app.use("/api/members", membersRouter);
 app.use("/api/miembros", membersRouter);
 
 app.use("/routines", routinesRouter);
+// Also support API-prefixed routines calls
+app.use("/api/routines", routinesRouter);
 app.use("/users", usersRouter);
 app.use("/api/users", usersRouter);
 app.use('/classes', classesRouter);
+// Also mount classes under /api/classes so API calls using the /api prefix resolve
+app.use('/api/classes', classesRouter);
 app.use('/routines', routinesRouter2);
 
 app.use("/auth", authRouter);
@@ -65,7 +71,18 @@ app.use("/api/attendances", attendanceRoutes);
 app.use("/attendances", attendanceRoutes);
 
 app.use("/reportes", reportsRoutes);
+// Provide English + /api aliases for reports
+app.use("/reports", reportsRoutes);
+app.use("/api/reports", reportsRoutes);
+// Spanish `/api/reportes` alias (frontend may call this exact path)
+app.use("/api/reportes", reportsRoutes);
 app.use("/pagos", paymentsRoutes);
+// Also mount payments under the `/api` prefix so `/api/pagos` requests resolve
+app.use("/api/pagos", paymentsRoutes);
+
+// Mount plans routes under /api/plans so frontend requests to /api/plans/* resolve
+app.use("/planes", plansRoutes);
+app.use("/api/plans", plansRoutes);
 
 app.use("/notifications", notificationsRoutes);
 // Mount notifications routes at root so legacy paths like

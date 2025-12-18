@@ -9,6 +9,10 @@
     "build": "tsc -p .",
     "start": "node dist/index.js",
     "seed": "ts-node src/seed.ts",
+    "seed:plans": "ts-node src/seeders/seedPlans.ts",
+    "seed:payments": "ts-node src/seeders/seedPayments.ts",
+    "seed:memberships": "ts-node src/seeders/seedMemberships.ts",
+    "seed:all": "npm run seed && npm run seed:plans && npm run seed:payments && npm run seed:memberships",
     "test": "jest --runInBand",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
@@ -32,6 +36,7 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^7.4.0",
     "node-fetch": "^2.6.7",
+    "nodemailer": "^6.9.3",
     "pdfkit": "^0.17.2"
   },
   "devDependencies": {

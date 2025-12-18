@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   getIncomeReport,
   obtenerMiembrosActivos,
+  obtenerMiembrosActivosCount,
   exportarMiembrosActivosExcel,
   obtenerReporteClases,
   exportarReporteClasesExcel,
@@ -19,6 +20,7 @@ const router = Router();
 router.get("/ingresos", getIncomeReport);
 
 router.get("/miembros-activos", obtenerMiembrosActivos);
+router.get("/miembros-activos/count", obtenerMiembrosActivosCount);
 
 router.get("/miembros-activos/excel", exportarMiembrosActivosExcel);
 
