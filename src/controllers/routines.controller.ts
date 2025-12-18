@@ -205,7 +205,7 @@ export async function assignRoutine(req: Request, res: Response) {
     const exercisesStatus = exercises.map((e: any) => ({ name: e.name, completed: false, completedAt: null }));
 
     const created = await RoutineAssignmentModel.create({ routineId, memberId, days: days || [], exercisesStatus });
-    return res.status(201).json({ id: created._id.toString(), routineId, memberId, days: created.days, exercisesStatus: created.exercisesStatus });
+    return res.status(201).json({ id: (created as any)._id.toString(), routineId, memberId, days: created.days, exercisesStatus: created.exercisesStatus });
   } catch (err) {
     console.error('assignRoutine error', err);
     return res.status(500).json({ error: { code: 'server_error' } });
