@@ -77,6 +77,12 @@ app.use("/api/reports", reportsRoutes);
 // Spanish `/api/reportes` alias (frontend may call this exact path)
 app.use("/api/reportes", reportsRoutes);
 app.use("/pagos", paymentsRoutes);
+// Also mount payments under the `/api` prefix so `/api/pagos` requests resolve
+app.use("/api/pagos", paymentsRoutes);
+
+// Mount plans routes under /api/plans so frontend requests to /api/plans/* resolve
+app.use("/planes", plansRoutes);
+app.use("/api/plans", plansRoutes);
 
 app.use("/notifications", notificationsRoutes);
 // Mount notifications routes at root so legacy paths like

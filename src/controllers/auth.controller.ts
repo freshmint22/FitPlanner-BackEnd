@@ -10,14 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 // Normalize email input consistently across register/login/forgot-password
 function normalizeEmail(input?: string): string {
   const raw = (input || '').toString();
-  const lower = raw.toLowerCase().trim();
-  // remove the '(.gym)' marker when present
-  return lower.replace(/\(\.gym\)/g, '').normalize('NFKC').trim();
-}
-
-function hasAdminMarker(input?: string): boolean {
-  const raw = (input || '').toString().toLowerCase().trim();
-  return /\(\.gym\)/.test(raw) || raw.endsWith('@gym.com');
+  return raw.toLowerCase().trim().normalize('NFKC');
 }
 
 export const register = async (req: Request, res: Response) => {
@@ -45,16 +38,8 @@ export const register = async (req: Request, res: Response) => {
     // Hash de la contraseña
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Determine role based on email markers / Determinar rol basado en dominio del email
-    let userRole = 'user';
-    if (hasAdminMarker(email)) {
-      userRole = 'admin';
-    } else if (role === 'ADMIN') {
-      // If trying to register as ADMIN without gym marker, reject
-      return res.status(400).json({
-        error: { code: 'invalid_role', message: 'Admin accounts must use @gym.com email' }
-      });
-    }
+    // Determine role based on provided selection. Default to 'user'.
+    let userRole = role === 'ADMIN' ? 'admin' : 'user';
 
     // Crear el miembro
         const newMember = await Member.create({

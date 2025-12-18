@@ -58,6 +58,34 @@ router.post('/membership/cancel', requireAuth, async (req: Request & { user?: { 
 // Endpoint de perfil con autenticación
 router.get("/profile", requireAuth, getProfile);
 
+// Admin-only helper: backfill payments for members that have a membership but no payments
+router.post(
+  "/backfill-payments",
+  requireAuth,
+  async (req: Request & { user?: { rol?: string } }, res: Response) => {
+    try {
+      if (req.user?.rol !== 'admin') return res.status(403).json({ error: 'forbidden' });
+
+      const membersWithMembership = await Member.find({ membership: { $ne: null } }).lean();
+      let created = 0;
+
+      for (const m of membersWithMembership) {
+        const exists = await Payment.findOne({ memberId: m._id.toString() }).lean();
+        if (!exists) {
+          const amount = (m as any).membership?.price || 0;
+          await Payment.create({ memberId: m._id.toString(), amount, method: 'AdminBackfill' });
+          created += 1;
+        }
+      }
+
+      return res.json({ ok: true, created });
+    } catch (err) {
+      console.error('Backfill payments error', err);
+      return res.status(500).json({ error: 'server_error' });
+    }
+  }
+);
+
 // Función para sanear búsquedas regex
 function escapeRegex(input: string) {
   return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

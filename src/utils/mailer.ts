@@ -3,9 +3,10 @@
 // a no-op send function that logs a warning.
 let nodemailer: any = null;
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, global-require
+  // @ts-expect-error require is used for lazy loading
   nodemailer = require('nodemailer');
-} catch (e) {
+} catch {
   // nodemailer not installed
   nodemailer = null;
 }
