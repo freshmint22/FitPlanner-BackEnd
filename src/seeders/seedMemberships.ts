@@ -38,7 +38,6 @@ async function run() {
       startsAt,
       endsAt: null,
       active: true,
-      // @ts-expect-error allow price field even if schema doesn't define it explicitly in Member
       price
     } as any);
   }
